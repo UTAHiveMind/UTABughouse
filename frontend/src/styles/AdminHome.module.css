@@ -3,17 +3,19 @@
   justify-content: center;   /* horizontally center child */
   align-items: flex-start;   /* keep content near top */
   min-height: 100vh;
-  background: linear-gradient(135deg, #007bff, #6f42c1);
+  background: linear-gradient(to bottom right, #1e1b4b, #581c87, #312e81);
   margin-left :80px;/*accounts for sidebar when its minimized*/
   overflow-x: hidden;
 }
 
 .content {
   flex: 1;
-  padding: 2rem;
+  padding: 2rem 1.5rem;
   padding-left:0;
-  max-width: 1200px;
+  max-width: 1380px;
   margin-left:  220px;
+  padding-bottom: 5rem; /* Space for mobile nav */
+  overflow-y: auto;
   transition: margin-left .5s ease;
 }
 
@@ -22,21 +24,22 @@
 }
 
 .pageHeader {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2.75rem;
   text-align: center;
 }
 
 .pageHeader h1 {
   font-size: 2.5rem;
-  color: #fdfdfd;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 .pageHeader p {
-  color: #e7ebef;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 1.1rem;
-  max-width: 700px;
+  max-width: 48rem;
   margin: 0 auto;
 }
 
@@ -59,18 +62,20 @@
 }
 
 .adminCard {
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.07);
+   background: rgba(255, 255, 255, 0.96);
+  border-radius: 22px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   padding: 2rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   height: 100%;
+   min-height: 380px;
+  backdrop-filter: blur(4px);
 }
 
 .adminCard:hover {
@@ -98,21 +103,37 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
+  background: linear-gradient(to bottom right, #60a5fa, #2563eb);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+  transition: transform 0.3s;
+}
+
+.adminCard:hover .cardIcon {
+  transform: scale(1.1) rotate(6deg);
+}
+
+.cardIcon svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: white;
 }
 
 .adminCard:nth-child(1) .cardIcon {
   color: #3498db;
   background-color: rgba(52, 152, 219, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
 }
 
 .adminCard:nth-child(2) .cardIcon {
   color: #2ecc71;
-  background-color: rgba(46, 204, 113, 0.1);
+  background: linear-gradient(to bottom right, #34d399, #059669);
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
 }
 
 .adminCard:nth-child(3) .cardIcon {
   color: #9b59b6;
-  background-color: rgba(155, 89, 182, 0.1);
+  background: linear-gradient(to bottom right, #a78bfa, #7c3aed);
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
 }
 
 .cardIcon svg {
@@ -176,24 +197,32 @@
 
 
 @media (max-width: 768px) {
-  .cardsContainer {
-    /* grid-template-columns: repeat(2, 1fr); */
-  }
+  /*  .cardsContainer { 
+    grid-template-columns: repeat(2, 1fr);
+  /* } */ 
 
   .container {
-    margin-left: 0;
-    width: 100%;
-    background: var(--main-background-mobile);
+    padding: 3rem 2rem;
+    padding-bottom: 3rem;
+    margin-left: 5rem;
 
   } 
 
   .pageHeader h1 {
-    font-weight: var(--main-title-font-weight-mobile);
+ font-size: 1.7rem;
+ color: #ffffff;
+ margin-bottom: 0.75rem;
+ font-weight: 700;
+ letter-spacing: -0.025em;
   }
 
   .pageHeader  h1, .pageHeader  p {
     /* color: black; */
-    color: var(--main-title-color-mobile);
+    color: #ffffff;
+  
+  }
+  .pageHeader  p {
+    font-size: 0.9rem;
   }
 
   .content {
@@ -204,7 +233,7 @@
     flex-direction: column;
     justify-content: space-evenly;
     align-items: center;
-    /* padding-bottom: 90px; */
+    padding-bottom: 120px;
     max-height: 95vh;
     overflow-y: auto;
   }
@@ -221,7 +250,7 @@
 
 .adminCard {
   padding: .5rem;
-  width: 20rem;
+  width: 25rem;
   display: flex;
   flex-direction: column;
   position: relative;

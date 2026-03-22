@@ -1,7 +1,7 @@
 .sidebar {
-  width: 17rem;
+  width: 20rem;
   height: 100dvh;
-  background: white;
+  background: linear-gradient(180deg, #35206f 0%, #5a2ca0 100%);
   position: fixed;
   top: 0;
   left: 0;
@@ -15,6 +15,7 @@
   flex-shrink: 1;            /* Allow shrinking */
   box-sizing: border-box;    /* Safe sizing */
   z-index: 10000;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* When sidebar is collapsed */
@@ -24,16 +25,16 @@
 }
 
 .active {
-  background-color: rgba(0, 0, 0, 0.1);
-  color: #000000;
-  font-weight: bold;
-  border-left: 4px solid #0064B1; /* Add colored border on the left */
+  color: #5b35d5;
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.18);
+  border-left: none;
+  font-weight: normal;
 }
 
 .sidebarIcon {
   width: 25px;
   height: 25px;
-  color: #0064B1;
+   color: #e7e5ef;
 }
 
 .iconContainer {
@@ -58,7 +59,7 @@
 .sidebarTitle {
   font-size: 1.8rem;
   margin: 0;
-  color: black;
+  color: rgb(226, 203, 203);
   opacity: 1;
   transition: opacity 0.2s ease, transform 0.2s ease;
   transform: translateX(0);
@@ -79,7 +80,7 @@
 }
 
 .burgerContainer {
-  background-color: #0064B1;
+  background-color: #0b73d9;
   position: absolute;
   right: -18px;
   top: calc(9rem / 1.6);
@@ -88,6 +89,7 @@
   border-radius: 2rem;
   border: 1px solid white;
   z-index: 1;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
 }
 
 .burgerTrigger {
@@ -101,7 +103,7 @@
 }
 
 .burgerMenu {
-  background-color: #0064B1;
+   background-color: white;
   position: relative;
   z-index: 1;
   width: 20px;
@@ -201,7 +203,7 @@
 
 .aItem {
   text-decoration: none;
-  color: #0064B1;
+  color: #eef4fa;
   font-size: 18.5px;
   display: flex;
   align-items: center;
@@ -226,8 +228,9 @@
 
 .liStudent:hover,
 .liTutor:hover {
-  background-color: #f2f2f2;
+   background: rgba(255, 255, 255, 0.12); 
   transition: 0.25s;
+   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar h1 {
