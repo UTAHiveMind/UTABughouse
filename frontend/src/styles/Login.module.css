@@ -93,3 +93,28 @@
 .text-center {
   text-align: center;
 }
+
+.loginRoot {
+  position: relative;
+}
+
+.cardSwipeCornerButton {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #007bff;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.cardSwipeCornerButton:hover {
+  background-color: #fff;
+  color: #0056b3;
+}

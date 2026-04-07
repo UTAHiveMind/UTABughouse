@@ -18,6 +18,29 @@
   margin-left: 80px;
 }
 
+.mainContentPublic {
+  flex: 1;
+  padding: 2rem 1rem 3rem;
+  overflow-y: auto;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 640px;
+}
+
+.publicBackLink {
+  display: inline-block;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  opacity: 0.95;
+}
+
+.publicBackLink:hover {
+  text-decoration: underline;
+  color: #fff;
+}
+
 .heading {
   font-size: 2rem;
   font-weight: bold;
@@ -35,6 +58,20 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.publicWelcomeBlock {
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+}
+
+.publicWelcomeLine {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.instruction,
 .instructions {
   font-size: 1.125rem;
   font-weight: 500;

@@ -28,6 +28,8 @@ import Attendance from "./pages/admin/AttendanceReport";
 import AdminReviews from "./pages/admin/AdminReviews";
 import StudentSessionCardSwipe from "./pages/student/SessionCardSwipe";
 import TutorSessionCardSwipe from "./pages/tutor/SessionCardSwipe";
+import PublicCardSwipePortal from "./pages/PublicCardSwipePortal";
+import PublicSessionCardSwipe from "./pages/PublicSessionCardSwipe";
 import { SidebarProvider } from "./components/Sidebar/SidebarContext";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import CourseManager from "./pages/admin/CourseManager";
@@ -91,6 +93,8 @@ function App() {
           <Route path="/admin/report/tutor/:userId" element={<TutorUserReport />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/card-swipe" element={<PublicCardSwipePortal />} />
+          <Route path="/card-swipe/:role" element={<PublicSessionCardSwipe />} />
 
           {/* Protected routes */}
           <Route
@@ -220,7 +224,7 @@ function App() {
           <Route path="/advanced-reports" element={<AdvancedReports />} />
           
         </Routes>
-      </BrowserRouter>`
+      </BrowserRouter>
     </SidebarProvider>
   );
 }
