@@ -125,8 +125,11 @@ function Login() {
 
   return (
     <div
-      className={`d-flex justify-content-center align-items-center vh-100 ${styles.background}`}
+      className={`d-flex justify-content-center align-items-center vh-100 ${styles.background} ${styles.loginRoot}`}
     >
+      <Link to="/card-swipe" className={styles.cardSwipeCornerButton}>
+        Card Swipe
+      </Link>
       <div className={styles.container}>
         {/* <div className={styles.productName}>bugHouse</div> */}
         <div className={styles.productHeader}>
