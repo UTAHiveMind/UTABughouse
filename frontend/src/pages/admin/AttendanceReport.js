@@ -124,6 +124,24 @@ function AttendanceReport() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const { isCollapsed } = useSidebar();
   const navigate = useNavigate();
+
+  // Date range filter state (from input type='date')
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  //Convert "yyyy-mm-dd" string from input into local Date object
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+  //Parse selected date range
+  const start = parseLocalDate(fromDate);
+  const end = parseLocalDate(toDate);
+
+  //Set end date to end of the day
+  if (end) {
+    end.setHours(23, 59, 59, 999);
+  }
   
   // Define fetchAttendance as a useCallback
   const fetchAttendance = useCallback(async () => {
@@ -193,6 +211,7 @@ function AttendanceReport() {
           
           // Format date and time from sessionTime
           const sessionTime = record.sessionID ? record.sessionID.sessionTime : null;
+          const rawDate = new Date(record.sessionID.sessionTime);
           const { date, time } = formatDateTime(sessionTime);
           
           // Split the date for the multi-line display
@@ -213,6 +232,7 @@ function AttendanceReport() {
             sessionId: record.sessionID ? record.sessionID._id : 'N/A',
             studentName,
             tutorName,
+            rawDateTime: rawDate, 
             date: formattedDate,
             startTime: time,
             duration: record.sessionID ? record.sessionID.duration : (record.duration || 'N/A'),
@@ -709,7 +729,7 @@ function csvCellEscape (value) {
 }
 
 //Function build the csv content from database
-function buildCsvContent(data) {
+function buildCsvContent(data, start, end) {
     //Headers of columns
     const headers = [
       "Student Name",
@@ -722,7 +742,13 @@ function buildCsvContent(data) {
       "Status",
     ];
 
-  const rows = data.map(r => {
+  const rows = data.filter(record => {
+                    // Show all data
+                    if (!start || !end) return true;
+                    // otherwise, show the selected time range
+                    return (record.rawDateTime >= start && record.rawDateTime <= end);
+                    }
+                  ).map(r => {
     //Combine start and end time
     const sessionTime = `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
     //If no show or the session status is cancelled -> the duration is 0
@@ -753,7 +779,7 @@ const handleExport = () => {
   const fileName = `attendance_report_${month}_${today}_${year}.csv`;
 
   //Building the csv content from database by call buildCsvContent function
-  const csvContent = buildCsvContent(attendanceRecords);
+  const csvContent = buildCsvContent(attendanceRecords, start, end);
 
   //Initiate the Blob
   const blob = new Blob (["\ufeff", csvContent], {type: 'text/csv; charset=utf-8;'});
@@ -872,8 +898,14 @@ const handleExport = () => {
               <p className="statValue">{loading ? "..." : noShowCount}</p>
             </div>
           </div>
+          <div style={{display: 'flex', justifyContent: "space-between",}}>
+            <h2 className={styles.sectionTitle}>Attendance Records</h2>
+            <div style={{display: 'flex', gap: "10px"}}>
+              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}></input>
+              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}></input>
+            </div>
+          </div>
           
-          <h2 className={styles.sectionTitle}>Attendance Records</h2>
           
           {loading ? (
             <div className={styles.loadingContainer}>
@@ -903,7 +935,13 @@ const handleExport = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {attendanceRecords.map(record => (
+                  {attendanceRecords.filter(record => {
+                    // Show all data
+                    if (!fromDate || !toDate) return true;
+                    // otherwise, show the selected time range
+                    return (record.rawDateTime >= start && record.rawDateTime <= end);
+                    }
+                  ).map(record => ( 
                     <tr key={record.id}>
                       <td style={{ fontWeight: '500', paddingLeft: '40px', paddingRight: '50px' }}>{record.studentName}</td>
                       <td style={{ fontWeight: '500', paddingRight: '50px' }}>{record.tutorName}</td>
