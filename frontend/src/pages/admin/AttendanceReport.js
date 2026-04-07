@@ -898,11 +898,11 @@ const handleExport = () => {
               <p className="statValue">{loading ? "..." : noShowCount}</p>
             </div>
           </div>
-          <div style={{display: 'flex', justifyContent: "space-between",}}>
+          <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Attendance Records</h2>
-            <div style={{display: 'flex', gap: "10px"}}>
-              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}></input>
-              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}></input>
+            <div className={styles.dateFilter}>
+              From<input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}></input>
+              To<input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}></input>
             </div>
           </div>
           
