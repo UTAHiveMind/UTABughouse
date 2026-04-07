@@ -6,6 +6,44 @@ const Session = require('../models/Session');
 const User = require('../models/User');
 const TutorProfile = require('../models/TutorProfile');
 
+async function findUserForSwipe({ cardID, firstName, lastName, studentID }) {
+  let user = null;
+  if (cardID) user = await User.findOne({ cardID });
+  if (!user && studentID) user = await User.findOne({ studentID });
+  if (!user && firstName && lastName) {
+    user = await User.findOne({
+      firstName: new RegExp(`^${firstName}$`, 'i'),
+      lastName: new RegExp(`^${lastName}$`, 'i'),
+    });
+  }
+  if (user && !user.cardID && cardID) {
+    user.cardID = cardID;
+    await user.save();
+  }
+  return user;
+}
+
+async function findUserForIdInput(idInput) {
+  let user = await User.findOne({ cardID: idInput });
+
+  if (!user && mongoose.Types.ObjectId.isValid(idInput)) {
+    user = await User.findById(idInput);
+  }
+
+  if (!user) {
+    user = await User.findOne({ studentID: idInput });
+  }
+
+  if (!user) {
+    const profile = await TutorProfile.findOne({ studentID: idInput });
+    if (profile) {
+      user = await User.findById(profile.userId);
+    }
+  }
+
+  return user;
+}
+
 // Shared attendance check-in/out logic
 async function handleAttendanceForUser(user, res) {
   try {
@@ -164,20 +202,7 @@ router.post('/check', async (req, res) => {
   const { cardID, firstName, lastName, studentID } = req.body;
 
   try {
-    let user = null;
-    if (cardID) user = await User.findOne({ cardID });
-    if (!user && studentID) user = await User.findOne({ studentID });
-    if (!user && firstName && lastName) {
-      user = await User.findOne({
-        firstName: new RegExp(`^${firstName}$`, "i"),
-        lastName: new RegExp(`^${lastName}$`, "i"),
-      });
-    }
-
-    if (user && !user.cardID && cardID) {
-      user.cardID = cardID;
-      await user.save();
-    }
+    const user = await findUserForSwipe({ cardID, firstName, lastName, studentID });
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found." });
@@ -191,28 +216,44 @@ router.post('/check', async (req, res) => {
   }
 });
 
+// Public login-screen card swipe: identify user only (no session / attendance logic)
+router.post('/public-welcome', async (req, res) => {
+  const { idInput, cardID, firstName, lastName, studentID } = req.body;
+
+  try {
+    let user = null;
+    if (idInput !== undefined && idInput !== null && String(idInput).trim() !== '') {
+      user = await findUserForIdInput(String(idInput).trim());
+    } else {
+      user = await findUserForSwipe({ cardID, firstName, lastName, studentID });
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return res.status(200).json({
+      success: true,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      displayName: displayName || 'Guest',
+    });
+  } catch (error) {
+    console.error('Error in public-welcome:', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
 router.post('/manual-checkin', async (req, res) => {
   const { idInput } = req.body;
 
   try {
-    let user = await User.findOne({ cardID: idInput });
-
-    if (!user && mongoose.Types.ObjectId.isValid(idInput)) {
-      user = await User.findById(idInput);
+    if (idInput === undefined || idInput === null || String(idInput).trim() === '') {
+      return res.status(400).json({ success: false, message: 'ID is required.' });
     }
 
-    // Try finding by studentID field (if separate)
-    if (!user) {
-      user = await User.findOne({ studentID: idInput });
-    }
-
-    // If still not found, try tutor profile fallback
-    if (!user) {
-      const profile = await TutorProfile.findOne({ studentID: idInput });
-      if (profile) {
-        user = await User.findById(profile.userId);
-      }
-    }
+    const user = await findUserForIdInput(String(idInput).trim());
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
