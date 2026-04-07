@@ -124,7 +124,6 @@ function AttendanceReport() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const { isCollapsed } = useSidebar();
   const navigate = useNavigate();
-  const test = 1;
 
   // Date range filter state (from input type='date')
   const [fromDate, setFromDate] = useState("");
@@ -730,7 +729,7 @@ function csvCellEscape (value) {
 }
 
 //Function build the csv content from database
-function buildCsvContent(data) {
+function buildCsvContent(data, start, end) {
     //Headers of columns
     const headers = [
       "Student Name",
@@ -743,7 +742,13 @@ function buildCsvContent(data) {
       "Status",
     ];
 
-  const rows = data.map(r => {
+  const rows = data.filter(record => {
+                    // Show all data
+                    if (!start || !end) return true;
+                    // otherwise, show the selected time range
+                    return (record.rawDateTime >= start && record.rawDateTime <= end);
+                    }
+                  ).map(r => {
     //Combine start and end time
     const sessionTime = `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
     //If no show or the session status is cancelled -> the duration is 0
@@ -774,7 +779,7 @@ const handleExport = () => {
   const fileName = `attendance_report_${month}_${today}_${year}.csv`;
 
   //Building the csv content from database by call buildCsvContent function
-  const csvContent = buildCsvContent(attendanceRecords);
+  const csvContent = buildCsvContent(attendanceRecords, start, end);
 
   //Initiate the Blob
   const blob = new Blob (["\ufeff", csvContent], {type: 'text/csv; charset=utf-8;'});
