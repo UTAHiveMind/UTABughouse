@@ -197,6 +197,43 @@ router.get('/all', async (req, res) => {
   }
 });
 
+router.get('/fromDtoD', async (req, res) => {
+  try {
+    const {fromDate, toDate} = req.query;
+
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+
+    //Check to see if date value is not a number
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ 
+        message: 'Invalid date format provided. Please use YYYY-MM-DD.' 
+      });
+    }
+
+    const attendanceRecords = await Attendance.find()
+    .populate('studentID', 'firstName lastName')
+    .populate({path: 'sessionID', 
+              match: {
+                  sessionTime: {
+                      $gte: start,
+                      $lte: end
+                  }
+              }, populate: {
+                      path: 'tutorID',
+                      select: 'firstName lastName'
+              }});
+    const filterRecords = attendanceRecords.filter(record => record.sessionID !== null);
+    res.json(filterRecords);
+  } catch (error) {
+      console.error("Error fetching attendance records:", error);
+      res.status(500).json({
+        message: 'Error fetching attendance records',
+        error: error.message
+      });
+  }
+});
+
 // POST /check for swipe (cardID, studentID, or names)
 router.post('/check', async (req, res) => {
   const { cardID, firstName, lastName, studentID } = req.body;
