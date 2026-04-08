@@ -182,6 +182,8 @@ async function handleAttendanceForUser(user, res) {
 router.get('/all', async (req, res) => {
   try {
     const attendanceRecords = await Attendance.find()
+      .sort({ createdAt: -1 })  //Show newest records first
+      .limit(50)                //Limit initial results to 50 records for better performance
       .populate('studentID', 'firstName lastName')
       .populate({
         path: 'sessionID',
@@ -197,14 +199,16 @@ router.get('/all', async (req, res) => {
   }
 });
 
+//Get Attendance records within a date range
 router.get('/fromDtoD', async (req, res) => {
   try {
-    const {fromDate, toDate} = req.query;
+    const {fromDate, toDate} = req.query; //Extract query parameters from URL to get fromDate and toDate
 
+    //Convert string to date object
     const start = new Date(fromDate);
     const end = new Date(toDate);
 
-    //Check to see if date value is not a number
+    //Check to see if date value is not a number or isValid
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return res.status(400).json({ 
         message: 'Invalid date format provided. Please use YYYY-MM-DD.' 
@@ -212,6 +216,8 @@ router.get('/fromDtoD', async (req, res) => {
     }
 
     const attendanceRecords = await Attendance.find()
+    .sort({ createdAt: -1 })
+    .limit(100)   // Increase limit for filtered queries to avoid missing results
     .populate('studentID', 'firstName lastName')
     .populate({path: 'sessionID', 
               match: {
@@ -223,9 +229,10 @@ router.get('/fromDtoD', async (req, res) => {
                       path: 'tutorID',
                       select: 'firstName lastName'
               }});
+    //Loop to remove any record without valid session (session = null)
     const filterRecords = attendanceRecords.filter(record => record.sessionID !== null);
-    res.json(filterRecords);
-  } catch (error) {
+    res.json(filterRecords);  //Return the data back to the browser client
+  } catch (error) { //Handle error
       console.error("Error fetching attendance records:", error);
       res.status(500).json({
         message: 'Error fetching attendance records',
