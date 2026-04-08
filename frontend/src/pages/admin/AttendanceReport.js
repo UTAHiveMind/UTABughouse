@@ -772,13 +772,7 @@ function buildCsvContent(data, start, end) {
       "Status",
     ];
 
-  const rows = data.filter(record => {
-                    // Show all data
-                    if (!start || !end) return true;
-                    // otherwise, show the selected time range
-                    return (record.rawDateTime >= start && record.rawDateTime <= end);
-                    }
-                  ).map(r => {
+  const rows = data.map(r => {
     //Combine start and end time
     const sessionTime = `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
     //If no show or the session status is cancelled -> the duration is 0
