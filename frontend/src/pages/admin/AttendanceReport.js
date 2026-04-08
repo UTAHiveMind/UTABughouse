@@ -150,10 +150,15 @@ function AttendanceReport() {
       
       // Check if we have valid cached data
       const now = new Date();
+
+      const hasDateFilter = Boolean(fromDate || toDate);
+      //This for DEBUG: to see why it is caching
+      console.log("fetch triggered. Filter active:", hasDateFilter, "Dates:", {fromDate, toDate});
+      //Otherwise, only hit cache if there NO Date Filter
       if (
+        !hasDateFilter &&
         attendanceCache.data && 
-        attendanceCache.timestamp && 
-        now.getTime() - attendanceCache.timestamp < attendanceCache.cacheDuration
+        (Date.now() - attendanceCache.timestamp < attendanceCache.cacheDuration)
       ) {
         console.log("Using cached attendance data");
         setAttendanceRecords(attendanceCache.data);
@@ -165,8 +170,31 @@ function AttendanceReport() {
       console.log("Fetching fresh attendance data...");
       
       try {
+        const params = {};
+        //Handle fromDate by default 1 year ago
+        if (fromDate) {
+          params.fromDate = new Date(fromDate).toISOString();
+        } else {
+          const past = new Date();
+          past.setFullYear(past.getFullYear() - 1); //E.g. setFullYear(2026 - 1)
+          params.fromDate = past.toISOString();     //Prevent timezone error to match with $lte and $gte from backend
+        }
+        //Handle toDate by default tomorrow
+        if (toDate) {
+          const endOfDay = new Date(toDate);  //Set to end of day to unclude today's records
+          endOfDay.setHours(23, 59, 59, 999);
+          params.toDate = endOfDay.toISOString();
+        } else {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          params.toDate = tomorrow.toISOString();
+        }
+
+        const hasDateFilter = fromDate || toDate;
+        const endpoint = hasDateFilter ? `${BACKEND_URL}/api/attendance/fromDtoD` : `${BACKEND_URL}/api/attendance/all`;
+        const attendanceResponse = await axios.get(endpoint, { params });
         // Fetch all attendance records with populated data
-        const attendanceResponse = await axios.get(`${BACKEND_URL}/api/attendance/all`);
+        // const attendanceResponse = await axios.get(`${BACKEND_URL}/api/attendance/all`);
         let attendanceList = attendanceResponse.data || [];
         
         console.log("Raw attendance data:", attendanceList);
@@ -261,8 +289,10 @@ function AttendanceReport() {
         console.log("Processed attendance records:", processedRecords);
         
         // Update the cache with the new data
-        attendanceCache.data = processedRecords;
-        attendanceCache.timestamp = now.getTime();
+        if (!fromDate && !toDate) {
+          attendanceCache.data = processedRecords;
+          attendanceCache.timestamp = now.getTime();
+        }
         
         setAttendanceRecords(processedRecords);
         setLastUpdated(now);
@@ -351,12 +381,12 @@ function AttendanceReport() {
       setError("An unexpected error occurred");
       setLoading(false);
     }
-  }, [error]);
+  }, [fromDate, toDate, BACKEND_URL, setError]);
 
   // Fetch attendance data on component mount
   useEffect(() => {
     fetchAttendance();
-  }, [fetchAttendance]);
+  }, [fetchAttendance, fromDate, toDate]);
   
   // Add enhanced styles for the statistics, tables, and status badges
   useEffect(() => {
@@ -742,13 +772,7 @@ function buildCsvContent(data, start, end) {
       "Status",
     ];
 
-  const rows = data.filter(record => {
-                    // Show all data
-                    if (!start || !end) return true;
-                    // otherwise, show the selected time range
-                    return (record.rawDateTime >= start && record.rawDateTime <= end);
-                    }
-                  ).map(r => {
+  const rows = data.map(r => {
     //Combine start and end time
     const sessionTime = `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
     //If no show or the session status is cancelled -> the duration is 0
@@ -935,13 +959,7 @@ const handleExport = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {attendanceRecords.filter(record => {
-                    // Show all data
-                    if (!fromDate || !toDate) return true;
-                    // otherwise, show the selected time range
-                    return (record.rawDateTime >= start && record.rawDateTime <= end);
-                    }
-                  ).map(record => ( 
+                  {attendanceRecords.map(record => ( 
                     <tr key={record.id}>
                       <td style={{ fontWeight: '500', paddingLeft: '40px', paddingRight: '50px' }}>{record.studentName}</td>
                       <td style={{ fontWeight: '500', paddingRight: '50px' }}>{record.tutorName}</td>
