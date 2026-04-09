@@ -924,10 +924,17 @@ const handleExport = () => {
           </div>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Attendance Records</h2>
-            <div className={styles.dateFilter}>
-              From<input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}></input>
-              To<input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}></input>
-            </div>
+          <div className={styles.dateFilter}>
+            <label className={styles.dateBox}>
+              <span>From</span>
+              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={styles.dateInput} />
+            </label>
+
+            <label className={styles.dateBox}>
+              <span>To</span>
+              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={styles.dateInput} />
+            </label>
+          </div>         
           </div>
           
           
