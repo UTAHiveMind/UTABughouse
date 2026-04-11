@@ -1,8 +1,8 @@
-import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
+const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
 
 const sns = new SNSClient({ region: process.env.AWS_REGION });
 
-export const sendSMS = async ({ to, body }) => {
+const sendSMS = async ({ to, body }) => {
   if (!to) return;
 
   const params = {
@@ -24,3 +24,5 @@ export const sendSMS = async ({ to, body }) => {
     console.error("SMS failed:", err.name, err.message);
   }
 };
+
+module.exports = { sendSMS };
