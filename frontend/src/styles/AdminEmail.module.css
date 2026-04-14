@@ -16,7 +16,7 @@
   transition: margin-left 0.5s ease;
   height: calc(100vh - 90px);
   overflow: auto;
-  background-color: #007bff; /* Blue background */
+  background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5); 
   color: #fff;               /* White text */
   transition: margin-left 0.5s ease;
 }

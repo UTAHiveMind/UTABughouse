@@ -5,8 +5,7 @@ html, body {
   height: 100%;
   overflow-x: hidden;
   font-family: sans-serif;
-  background: linear-gradient(180deg, #007bff 0%, #6f42c1 100%);
-}
+background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5);}
 
 .container {
   display: flex;
