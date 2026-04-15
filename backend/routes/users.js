@@ -211,6 +211,9 @@ router.get('/tutors', async (req, res) => {
             ],
           },
           totalRatings: { $size: '$feedbacks' },
+          latestFeedbackDate: {
+            $max: '$feedbacks.createdAt'
+          },
         },
       },
 
@@ -224,6 +227,7 @@ router.get('/tutors', async (req, res) => {
 
           avgRating: 1,
           totalRatings: 1,
+          latestFeedbackDate: 1,
 
           courses: {
             $map: {
@@ -238,7 +242,8 @@ router.get('/tutors', async (req, res) => {
           },
         },
       },
-    ]);                      
+    ]).sort({latestFeedbackDate: -1}) //Latest to the past
+    .limit(100);                      
 
     res.status(200).json(tutors);
   } catch (err) {
