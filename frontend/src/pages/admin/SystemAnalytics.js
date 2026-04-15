@@ -264,10 +264,10 @@ const handleExport = () => {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const year = String(now.getFullYear());
   //Create file name as format: attendance_report_MM_DD_YYYY.csv
-  const fileName = `system_analytics_${month}_${today}_${year}.csv`;
+  const fileName = `tutor_performance_report_${month}_${today}_${year}.csv`;
 
   //Building the csv content from database by call buildCsvContent function
-  const csvContent = buildCsvContent(tutors, '2026-02-15', '2026-04-15');
+  const csvContent = buildCsvContent(tutors, start, end);
 
   //Initiate the Blob
   const blob = new Blob (["\ufeff", csvContent], {type: 'text/csv; charset=utf-8;'});
