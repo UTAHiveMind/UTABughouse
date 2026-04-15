@@ -70,8 +70,7 @@ function SystemAnalytics() {
             
             // Get session count (completed or scheduled sessions)
             const sessionsResponse = await axios.get(`${BACKEND_URL}/api/sessions?tutorID=${tutor._id}`);
-            const sessions = sessionsResponse.data || [];
-            const totalSessions = sessions.length;
+            const totalSessions = tutor.totalSessions;
             
             // Calculate average rating from feedback
             let avgRating = tutor.avgRating || 0;
