@@ -322,6 +322,197 @@ router.get('/tutors', async (req, res) => {
   }
 });
 
+
+//Get tutor report records within a date range
+router.get('/fromDtoD', async (req, res) => {
+  try {
+    const {fromDate, toDate} = req.query; //Extract query parameters from URL to get fromDate and toDate
+
+    //Convert string to date object
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+
+    //Check to see if date value is not a number or isValid
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ 
+        message: 'Invalid date format provided. Please use YYYY-MM-DD.' 
+      });
+    }
+
+    const tutors = await User.aggregate([
+      { $match: { role: 'Tutor' } },
+
+      // JOIN tutor profile
+      {
+        $lookup: {
+          from: 'tutorprofiles',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'profile',
+        },
+      },
+      {
+        $unwind: {
+          path: '$profile',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // JOIN courses
+      {
+        $lookup: {
+          from: 'courses',
+          localField: 'profile.courses',
+          foreignField: '_id',
+          as: 'courseDetails',
+        },
+      },
+
+      // JOIN feedbacks
+      {
+        $lookup: {
+          from: 'feedbacks',
+          localField: '_id',
+          foreignField: 'tutorUniqueId',
+          as: 'feedbacks',
+        },
+      },
+
+      // JOIN sessions
+      {
+        $lookup: {
+          from: 'sessions',
+          let: { tutorId: '$_id'},
+          pipeline: [
+            {
+              $match: {
+                $expr: {$eq: ['$tutorID', '$$tutorId']},
+                sessionTime: {
+                  $gte: start,
+                  $lte: end,
+                }
+              }
+            }
+          ],
+          as: 'sessions',
+        },
+      },
+
+      {
+        $addFields: {
+          avgRating: {
+            $cond: [
+              { $gt: [{ $size: '$feedbacks' }, 0] },
+              { $avg: '$feedbacks.rating' },
+              0,
+            ],
+          },
+          totalRatings: { $size: '$feedbacks' },
+          latestFeedbackDate: {
+            $max: '$feedbacks.createdAt'
+          },
+          totalSessions: {$size: '$sessions'},
+          totalCompleted: {
+            $size: {
+              $filter: {
+                input: '$sessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Completed']}
+              }
+            }
+          },
+          totalCancelled: {
+            $size: {
+              $filter: {
+                input: '$sessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Cancelled']}
+              }
+            }
+          },
+          totalCompletedMinutes: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: '$sessions',
+                    as: 'session',
+                    cond: { $eq: ['$$session.status', 'Completed'] }
+                  }
+                },
+                as: 'completedSession',
+                in: '$$completedSession.duration'
+              }
+            }
+          },
+
+          totalCompletedHours: {
+            $divide: [
+              {
+                $sum: {
+                  $map: {
+                    input: {
+                      $filter: {
+                        input: '$sessions',
+                        as: 'session',
+                        cond: { $eq: ['$$session.status', 'Completed'] }
+                      }
+                    },
+                    as: 'completedSession',
+                    in: '$$completedSession.duration'
+                  }
+                }
+              },
+              60
+            ]
+          }
+        },
+      },
+
+      // FINAL OUTPUT
+      {
+        $project: {
+          _id: 1,
+          firstName: 1,
+          lastName: 1,
+          profilePicture: '$profile.profilePicture',
+
+          avgRating: 1,
+          totalRatings: 1,
+          latestFeedbackDate: 1,
+          totalSessions: 1,
+          totalCompleted: 1,
+          totalCancelled: 1,
+          totalCompletedMinutes: 1,
+          totalCompletedHours: 1,
+
+          courses: {
+            $map: {
+              input: '$courseDetails',
+              as: 'course',
+              in: {
+                _id: '$$course._id',
+                code: '$$course.code',
+                name: '$$course.title',
+              },
+            },
+          },
+        },
+      },
+    ]).sort({latestFeedbackDate: -1}) //Latest to the past
+    .limit(100);  
+
+    res.json(tutors);  //Return the data back to the browser client
+  } catch (error) { //Handle error
+      console.error("Error fetching tutor analytics records:", error);
+      res.status(500).json({
+        message: 'Error fetching tutor analytics records',
+        error: error.message
+      });
+  }
+});
+
+
 // NEW ROUTE: Fetch a single user by ID
 router.get('/:id', async (req, res) => {
   try {

@@ -31,6 +31,24 @@ function SystemAnalytics() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const { isCollapsed } = useSidebar();
+
+  // Date range filter state (from input type='date')
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  //Convert "yyyy-mm-dd" string from input into local Date object
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+  //Parse selected date range
+  const start = parseLocalDate(fromDate);
+  const end = parseLocalDate(toDate);
+
+  //Set end date to end of the day
+  if (end) {
+    end.setHours(23, 59, 59, 999);
+  }
   
   // Initialize navigate for routing
   const navigate = useNavigate();
@@ -284,6 +302,17 @@ const handleExport = () => {
         
         <div className={styles.analyticsSection}>
           <h2 className={styles.sectionTitle}>Tutor Performance</h2>
+                    <div className={styles.dateFilter}>
+                      <label className={styles.dateBox}>
+                        <span>From</span>
+                        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={styles.dateInput} />
+                      </label>
+          
+                      <label className={styles.dateBox}>
+                        <span>To</span>
+                        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={styles.dateInput} />
+                      </label>
+                    </div> 
           
           {loading ? (
             <div className={styles.loadingContainer}>
