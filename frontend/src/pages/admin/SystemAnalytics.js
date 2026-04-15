@@ -60,10 +60,16 @@ function SystemAnalytics() {
       
       // Check if we have valid cached data
       const now = new Date();
+
+      const hasDateFilter = Boolean(fromDate || toDate);
+      //This for DEBUG: to see why it is caching
+      console.log("fetch triggered. Filter active:", hasDateFilter, "Dates:", {fromDate, toDate});
+      //Otherwise, only hit cache if there NO Date Filter
       if (
+        !hasDateFilter &&
         analyticsCache.data && 
         analyticsCache.timestamp && 
-        now.getTime() - analyticsCache.timestamp < analyticsCache.cacheDuration
+        (Date.now() - analyticsCache.timestamp < analyticsCache.cacheDuration)
       ) {
         console.log("Using cached tutor analytics data");
         setTutors(analyticsCache.data);
@@ -73,9 +79,33 @@ function SystemAnalytics() {
       }
       
       console.log("Fetching fresh tutor analytics data...");
+
+      const params = {};
+      //Handle fromDate by default 1 year ago
+      if (fromDate) {
+        params.fromDate = new Date(fromDate).toISOString();
+      } else {
+        const past = new Date();
+        past.setFullYear(past.getFullYear() - 1); //E.g. setFullYear(2026 - 1)
+        params.fromDate = past.toISOString();     //Prevent timezone error to match with $lte and $gte from backend
+      }
+      //Handle toDate by default tomorrow
+      if (toDate) {
+        const endOfDay = new Date(toDate);  //Set to end of day to unclude today's records
+        endOfDay.setHours(23, 59, 59, 999);
+        params.toDate = endOfDay.toISOString();
+      } else {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        params.toDate = tomorrow.toISOString();
+      }
+
+      // const hasDateFilterValue = fromDate || toDate;
+      const endpoint = hasDateFilter ? `${BACKEND_URL}/api/users/fromDtoD` : `${BACKEND_URL}/api/users/tutors`;
       
       // Step 1: Fetch all tutors from users API
-      const tutorsResponse = await axios.get(`${BACKEND_URL}/api/users/tutors`);
+      // const tutorsResponse = await axios.get(`${BACKEND_URL}/api/users/tutors`);
+      const tutorsResponse = await axios.get(endpoint, { params });
       const tutorsList = tutorsResponse.data;
       console.log(`Fetched ${tutorsList.length} tutors from users API`);
       
@@ -160,7 +190,7 @@ function SystemAnalytics() {
       setError(`${errorMessage} (Using sample data for display purposes)`);
       setLoading(false);
     }
-  }, []);
+  }, [fromDate, toDate, BACKEND_URL]);
 
   // Fetch tutors data from API on component mount
   useEffect(() => {

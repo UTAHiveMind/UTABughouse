@@ -378,23 +378,32 @@ router.get('/fromDtoD', async (req, res) => {
         },
       },
 
-      // JOIN sessions
+      // ALL sessions for analytics totals
       {
         $lookup: {
           from: 'sessions',
-          let: { tutorId: '$_id'},
+          localField: '_id',
+          foreignField: 'tutorID',
+          as: 'allSessions',
+        },
+      },
+
+      // FILTERED sessions only for date-range visibility
+      {
+        $lookup: {
+          from: 'sessions',
+          let: { tutorId: '$_id' },
           pipeline: [
             {
               $match: {
-                $expr: {$eq: ['$tutorID', '$$tutorId']},
-                sessionTime: {
-                  $gte: start,
-                  $lte: end,
-                }
-              }
-            }
+                $expr: { $eq: ['$tutorID', '$$tutorId'] },
+                ...(Object.keys(dateFilter).length > 0
+                  ? { sessionTime: dateFilter }
+                  : {}),
+              },
+            },
           ],
-          as: 'sessions',
+          as: 'filteredSessions',
         },
       },
 
@@ -409,41 +418,46 @@ router.get('/fromDtoD', async (req, res) => {
           },
           totalRatings: { $size: '$feedbacks' },
           latestFeedbackDate: {
-            $max: '$feedbacks.createdAt'
+            $max: '$feedbacks.createdAt',
           },
-          totalSessions: {$size: '$sessions'},
+
+          // analytics totals = always from ALL sessions
+          totalSessions: { $size: '$allSessions' },
+
           totalCompleted: {
             $size: {
               $filter: {
-                input: '$sessions',
+                input: '$allSessions',
                 as: 'session',
-                cond: { $eq: ['$$session.status', 'Completed']}
-              }
-            }
+                cond: { $eq: ['$$session.status', 'Completed'] },
+              },
+            },
           },
+
           totalCancelled: {
             $size: {
               $filter: {
-                input: '$sessions',
+                input: '$allSessions',
                 as: 'session',
-                cond: { $eq: ['$$session.status', 'Cancelled']}
-              }
-            }
+                cond: { $eq: ['$$session.status', 'Cancelled'] },
+              },
+            },
           },
+
           totalCompletedMinutes: {
             $sum: {
               $map: {
                 input: {
                   $filter: {
-                    input: '$sessions',
+                    input: '$allSessions',
                     as: 'session',
-                    cond: { $eq: ['$$session.status', 'Completed'] }
-                  }
+                    cond: { $eq: ['$$session.status', 'Completed'] },
+                  },
                 },
                 as: 'completedSession',
-                in: '$$completedSession.duration'
-              }
-            }
+                in: '$$completedSession.duration',
+              },
+            },
           },
 
           totalCompletedHours: {
@@ -453,23 +467,32 @@ router.get('/fromDtoD', async (req, res) => {
                   $map: {
                     input: {
                       $filter: {
-                        input: '$sessions',
+                        input: '$allSessions',
                         as: 'session',
-                        cond: { $eq: ['$$session.status', 'Completed'] }
-                      }
+                        cond: { $eq: ['$$session.status', 'Completed'] },
+                      },
                     },
                     as: 'completedSession',
-                    in: '$$completedSession.duration'
-                  }
-                }
+                    in: '$$completedSession.duration',
+                  },
+                },
               },
-              60
-            ]
-          }
+              60,
+            ],
+          },
+
+          // this is only for filtering rows by date range
+          filteredSessionCount: { $size: '$filteredSessions' },
         },
       },
 
-      // FINAL OUTPUT
+      // Only keep tutors that had sessions in selected range
+      {
+        $match: {
+          filteredSessionCount: { $gt: 0 },
+        },
+      },
+
       {
         $project: {
           _id: 1,
@@ -499,16 +522,18 @@ router.get('/fromDtoD', async (req, res) => {
           },
         },
       },
-    ]).sort({latestFeedbackDate: -1}) //Latest to the past
-    .limit(100);  
 
-    res.json(tutors);  //Return the data back to the browser client
-  } catch (error) { //Handle error
-      console.error("Error fetching tutor analytics records:", error);
-      res.status(500).json({
-        message: 'Error fetching tutor analytics records',
-        error: error.message
-      });
+      { $sort: { latestFeedbackDate: -1 } },
+      { $limit: 100 },
+    ]);
+
+    res.json(tutors);
+  } catch (error) {
+    console.error('Error fetching tutor analytics records:', error);
+    res.status(500).json({
+      message: 'Error fetching tutor analytics records',
+      error: error.message,
+    });
   }
 });
 
