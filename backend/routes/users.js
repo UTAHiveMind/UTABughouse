@@ -160,11 +160,12 @@ router.get('/tutors/by-course/:search', async (req, res) => {
   }
 });
 
-// GET /api/users/tutors
 router.get('/tutors', async (req, res) => {
   try {
     const tutors = await User.aggregate([
       { $match: { role: 'Tutor' } },
+
+      // JOIN tutor profile
       {
         $lookup: {
           from: 'tutorprofiles',
@@ -173,7 +174,14 @@ router.get('/tutors', async (req, res) => {
           as: 'profile',
         },
       },
-      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: '$profile',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // JOIN courses
       {
         $lookup: {
           from: 'courses',
@@ -182,12 +190,115 @@ router.get('/tutors', async (req, res) => {
           as: 'courseDetails',
         },
       },
+
+      // JOIN feedbacks
+      {
+        $lookup: {
+          from: 'feedbacks',
+          localField: '_id',
+          foreignField: 'tutorUniqueId',
+          as: 'feedbacks',
+        },
+      },
+
+      // JOIN sessions
+      {
+        $lookup: {
+          from: 'sessions',
+          localField: '_id',
+          foreignField: 'tutorID',
+          as: 'sessions',
+        },
+      },
+
+      {
+        $addFields: {
+          avgRating: {
+            $cond: [
+              { $gt: [{ $size: '$feedbacks' }, 0] },
+              { $avg: '$feedbacks.rating' },
+              0,
+            ],
+          },
+          totalRatings: { $size: '$feedbacks' },
+          latestFeedbackDate: {
+            $max: '$feedbacks.createdAt'
+          },
+          totalSessions: {$size: '$sessions'},
+          totalCompleted: {
+            $size: {
+              $filter: {
+                input: '$sessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Completed']}
+              }
+            }
+          },
+          totalCancelled: {
+            $size: {
+              $filter: {
+                input: '$sessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Cancelled']}
+              }
+            }
+          },
+          totalCompletedMinutes: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: '$sessions',
+                    as: 'session',
+                    cond: { $eq: ['$$session.status', 'Completed'] }
+                  }
+                },
+                as: 'completedSession',
+                in: '$$completedSession.duration'
+              }
+            }
+          },
+
+          totalCompletedHours: {
+            $divide: [
+              {
+                $sum: {
+                  $map: {
+                    input: {
+                      $filter: {
+                        input: '$sessions',
+                        as: 'session',
+                        cond: { $eq: ['$$session.status', 'Completed'] }
+                      }
+                    },
+                    as: 'completedSession',
+                    in: '$$completedSession.duration'
+                  }
+                }
+              },
+              60
+            ]
+          }
+        },
+      },
+
+      // FINAL OUTPUT
       {
         $project: {
           _id: 1,
           firstName: 1,
           lastName: 1,
           profilePicture: '$profile.profilePicture',
+
+          avgRating: 1,
+          totalRatings: 1,
+          latestFeedbackDate: 1,
+          totalSessions: 1,
+          totalCompleted: 1,
+          totalCancelled: 1,
+          totalCompletedMinutes: 1,
+          totalCompletedHours: 1,
+
           courses: {
             $map: {
               input: '$courseDetails',
@@ -201,7 +312,8 @@ router.get('/tutors', async (req, res) => {
           },
         },
       },
-    ]);
+    ]).sort({latestFeedbackDate: -1}) //Latest to the past
+    .limit(100);                      
 
     res.status(200).json(tutors);
   } catch (err) {
@@ -209,6 +321,222 @@ router.get('/tutors', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch tutors' });
   }
 });
+
+
+//Get tutor report records within a date range
+router.get('/fromDtoD', async (req, res) => {
+  try {
+    const {fromDate, toDate} = req.query; //Extract query parameters from URL to get fromDate and toDate
+
+    //Convert string to date object
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+
+    //Check to see if date value is not a number or isValid
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ 
+        message: 'Invalid date format provided. Please use YYYY-MM-DD.' 
+      });
+    }
+
+    const tutors = await User.aggregate([
+      { $match: { role: 'Tutor' } },
+
+      // JOIN tutor profile
+      {
+        $lookup: {
+          from: 'tutorprofiles',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'profile',
+        },
+      },
+      {
+        $unwind: {
+          path: '$profile',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // JOIN courses
+      {
+        $lookup: {
+          from: 'courses',
+          localField: 'profile.courses',
+          foreignField: '_id',
+          as: 'courseDetails',
+        },
+      },
+
+      // JOIN feedbacks
+      {
+        $lookup: {
+          from: 'feedbacks',
+          localField: '_id',
+          foreignField: 'tutorUniqueId',
+          as: 'feedbacks',
+        },
+      },
+
+      // ALL sessions for analytics totals
+      {
+        $lookup: {
+          from: 'sessions',
+          localField: '_id',
+          foreignField: 'tutorID',
+          as: 'allSessions',
+        },
+      },
+
+      // FILTERED sessions only for date-range visibility
+      {
+        $lookup: {
+          from: 'sessions',
+          let: { tutorId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$tutorID', '$$tutorId'] },
+                ...(Object.keys(dateFilter).length > 0
+                  ? { sessionTime: dateFilter }
+                  : {}),
+              },
+            },
+          ],
+          as: 'filteredSessions',
+        },
+      },
+
+      {
+        $addFields: {
+          avgRating: {
+            $cond: [
+              { $gt: [{ $size: '$feedbacks' }, 0] },
+              { $avg: '$feedbacks.rating' },
+              0,
+            ],
+          },
+          totalRatings: { $size: '$feedbacks' },
+          latestFeedbackDate: {
+            $max: '$feedbacks.createdAt',
+          },
+
+          // analytics totals = always from ALL sessions
+          totalSessions: { $size: '$allSessions' },
+
+          totalCompleted: {
+            $size: {
+              $filter: {
+                input: '$allSessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Completed'] },
+              },
+            },
+          },
+
+          totalCancelled: {
+            $size: {
+              $filter: {
+                input: '$allSessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Cancelled'] },
+              },
+            },
+          },
+
+          totalCompletedMinutes: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: '$allSessions',
+                    as: 'session',
+                    cond: { $eq: ['$$session.status', 'Completed'] },
+                  },
+                },
+                as: 'completedSession',
+                in: '$$completedSession.duration',
+              },
+            },
+          },
+
+          totalCompletedHours: {
+            $divide: [
+              {
+                $sum: {
+                  $map: {
+                    input: {
+                      $filter: {
+                        input: '$allSessions',
+                        as: 'session',
+                        cond: { $eq: ['$$session.status', 'Completed'] },
+                      },
+                    },
+                    as: 'completedSession',
+                    in: '$$completedSession.duration',
+                  },
+                },
+              },
+              60,
+            ],
+          },
+
+          // this is only for filtering rows by date range
+          filteredSessionCount: { $size: '$filteredSessions' },
+        },
+      },
+
+      // Only keep tutors that had sessions in selected range
+      {
+        $match: {
+          filteredSessionCount: { $gt: 0 },
+        },
+      },
+
+      {
+        $project: {
+          _id: 1,
+          firstName: 1,
+          lastName: 1,
+          profilePicture: '$profile.profilePicture',
+
+          avgRating: 1,
+          totalRatings: 1,
+          latestFeedbackDate: 1,
+          totalSessions: 1,
+          totalCompleted: 1,
+          totalCancelled: 1,
+          totalCompletedMinutes: 1,
+          totalCompletedHours: 1,
+
+          courses: {
+            $map: {
+              input: '$courseDetails',
+              as: 'course',
+              in: {
+                _id: '$$course._id',
+                code: '$$course.code',
+                name: '$$course.title',
+              },
+            },
+          },
+        },
+      },
+
+      { $sort: { latestFeedbackDate: -1 } },
+      { $limit: 100 },
+    ]);
+
+    res.json(tutors);
+  } catch (error) {
+    console.error('Error fetching tutor analytics records:', error);
+    res.status(500).json({
+      message: 'Error fetching tutor analytics records',
+      error: error.message,
+    });
+  }
+});
+
 
 // NEW ROUTE: Fetch a single user by ID
 router.get('/:id', async (req, res) => {

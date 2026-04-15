@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "../../styles/SystemAnalytics.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
+import { FaFileCsv } from 'react-icons/fa';
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
@@ -30,6 +31,24 @@ function SystemAnalytics() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const { isCollapsed } = useSidebar();
+
+  // Date range filter state (from input type='date')
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  //Convert "yyyy-mm-dd" string from input into local Date object
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+  //Parse selected date range
+  const start = parseLocalDate(fromDate);
+  const end = parseLocalDate(toDate);
+
+  //Set end date to end of the day
+  if (end) {
+    end.setHours(23, 59, 59, 999);
+  }
   
   // Initialize navigate for routing
   const navigate = useNavigate();
@@ -41,10 +60,16 @@ function SystemAnalytics() {
       
       // Check if we have valid cached data
       const now = new Date();
+
+      const hasDateFilter = Boolean(fromDate || toDate);
+      //This for DEBUG: to see why it is caching
+      console.log("fetch triggered. Filter active:", hasDateFilter, "Dates:", {fromDate, toDate});
+      //Otherwise, only hit cache if there NO Date Filter
       if (
+        !hasDateFilter &&
         analyticsCache.data && 
         analyticsCache.timestamp && 
-        now.getTime() - analyticsCache.timestamp < analyticsCache.cacheDuration
+        (Date.now() - analyticsCache.timestamp < analyticsCache.cacheDuration)
       ) {
         console.log("Using cached tutor analytics data");
         setTutors(analyticsCache.data);
@@ -54,9 +79,33 @@ function SystemAnalytics() {
       }
       
       console.log("Fetching fresh tutor analytics data...");
+
+      const params = {};
+      //Handle fromDate by default 1 year ago
+      if (fromDate) {
+        params.fromDate = new Date(fromDate).toISOString();
+      } else {
+        const past = new Date();
+        past.setFullYear(past.getFullYear() - 1); //E.g. setFullYear(2026 - 1)
+        params.fromDate = past.toISOString();     //Prevent timezone error to match with $lte and $gte from backend
+      }
+      //Handle toDate by default tomorrow
+      if (toDate) {
+        const endOfDay = new Date(toDate);  //Set to end of day to unclude today's records
+        endOfDay.setHours(23, 59, 59, 999);
+        params.toDate = endOfDay.toISOString();
+      } else {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        params.toDate = tomorrow.toISOString();
+      }
+
+      // const hasDateFilterValue = fromDate || toDate;
+      const endpoint = hasDateFilter ? `${BACKEND_URL}/api/users/fromDtoD` : `${BACKEND_URL}/api/users/tutors`;
       
       // Step 1: Fetch all tutors from users API
-      const tutorsResponse = await axios.get(`${BACKEND_URL}/api/users/tutors`);
+      // const tutorsResponse = await axios.get(`${BACKEND_URL}/api/users/tutors`);
+      const tutorsResponse = await axios.get(endpoint, { params });
       const tutorsList = tutorsResponse.data;
       console.log(`Fetched ${tutorsList.length} tutors from users API`);
       
@@ -70,18 +119,21 @@ function SystemAnalytics() {
             
             // Get session count (completed or scheduled sessions)
             const sessionsResponse = await axios.get(`${BACKEND_URL}/api/sessions?tutorID=${tutor._id}`);
-            const sessions = sessionsResponse.data || [];
-            const totalSessions = sessions.length;
+            const totalSessions = tutor.totalSessions;
             
             // Calculate average rating from feedback
-            let avgRating = tutor.rating || 0;
+            let avgRating = tutor.avgRating || 0;
             
             return {
               id: tutor._id,
               name: `${tutor.firstName} ${tutor.lastName}`,
               profilePic: profile?.profilePicture || DEFAULT_AVATAR,
               avgRating: avgRating,
-              totalSessions: totalSessions
+              totalSessions: tutor.totalSessions,
+              totalCompleted: tutor.totalCompleted,
+              totalCancelled: tutor.totalCancelled,
+              totalCompletedMinutes: tutor.totalCompletedMinutes,
+              totalCompletedHours: tutor.totalCompletedHours,
             };
           } catch (error) {
             console.log(`Error fetching details for tutor ${tutor._id}:`, error.message);
@@ -138,7 +190,7 @@ function SystemAnalytics() {
       setError(`${errorMessage} (Using sample data for display purposes)`);
       setLoading(false);
     }
-  }, []);
+  }, [fromDate, toDate, BACKEND_URL]);
 
   // Fetch tutors data from API on component mount
   useEffect(() => {
@@ -157,6 +209,86 @@ function SystemAnalytics() {
   const handleTutorClick = (tutorId) => {
     navigate(`/tutor/${tutorId}`);
   };
+
+
+  // Function to handle escape each CSV cell
+function csvCellEscape (value) {
+  if (value == null || value == undefined) return "";
+
+  const str = String(value);
+  //the cell value should be wrapped by "" if they contain any characters below
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
+  return str;
+}
+
+//Function build the csv content from database
+function buildCsvContent(data, start, end) {
+    //Headers of columns
+    const headers = [
+      "Tutor Name",
+      "Total Session",
+      "Completed",
+      "Cancelled",
+      "Average Rating",
+      "Total Hours",
+      "Total Minutes"
+    ];
+
+  const rows = data.map(r => {
+    //Combine start and end time
+    const sessionTime = `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
+    //If no show or the session status is cancelled -> the duration is 0
+    const realDuration = r.wasNoShow || r.status === "Cancelled" ? 0 : r.duration;
+    return [
+      r.name,
+      r.totalSessions,
+      r.totalCompleted,
+      r.totalCancelled,
+      r.avgRating,
+      r.totalCompletedHours,
+      r.totalCompletedMinutes
+    ].map(csvCellEscape).join(','); //Escape each cell to match the CSV format
+  });
+
+  //join headers and all rows to be a complete csv
+  return headers.join(',') + "\n" + rows.join('\n');
+}
+
+//Function handle csv file export
+const handleExport = () => {
+  const now = new Date(); //Initiate the current time to name the dowload file
+  const today = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = String(now.getFullYear());
+  //Create file name as format: attendance_report_MM_DD_YYYY.csv
+  const fileName = `tutor_performance_report_${month}_${today}_${year}.csv`;
+
+  //Building the csv content from database by call buildCsvContent function
+  const csvContent = buildCsvContent(tutors, start, end);
+
+  //Initiate the Blob
+  const blob = new Blob (["\ufeff", csvContent], {type: 'text/csv; charset=utf-8;'});
+  const urlTemp = URL.createObjectURL(blob);  //Create temporary link
+
+  const link = document.createElement('a'); //Create anchor tag to trigger download
+  link.setAttribute('href', urlTemp);
+  link.setAttribute('download', fileName);
+
+  link.style.visibility = 'hidden';
+
+  //Add to DOM -> click -> remove it
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  //Free the memory
+  URL.revokeObjectURL(urlTemp);
+}
+
+
+  
 
   // Format the last updated time
   const formatLastUpdated = (date) => {
@@ -189,12 +321,28 @@ function SystemAnalytics() {
               >
                 {loading ? "Refreshing..." : "Refresh Data"}
               </button>
+              <button 
+                className={styles.csvButton}
+                onClick={handleExport}>
+                <FaFileCsv /> Export CSV
+              </button>
             </div>
           )}
         </div>
         
         <div className={styles.analyticsSection}>
           <h2 className={styles.sectionTitle}>Tutor Performance</h2>
+                    <div className={styles.dateFilter}>
+                      <label className={styles.dateBox}>
+                        <span>From</span>
+                        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={styles.dateInput} />
+                      </label>
+          
+                      <label className={styles.dateBox}>
+                        <span>To</span>
+                        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={styles.dateInput} />
+                      </label>
+                    </div> 
           
           {loading ? (
             <div className={styles.loadingContainer}>
