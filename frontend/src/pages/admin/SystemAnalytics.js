@@ -74,7 +74,7 @@ function SystemAnalytics() {
             const totalSessions = sessions.length;
             
             // Calculate average rating from feedback
-            let avgRating = tutor.rating || 0;
+            let avgRating = tutor.avgRating || 0;
             
             return {
               id: tutor._id,

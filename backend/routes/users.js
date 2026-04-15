@@ -160,11 +160,12 @@ router.get('/tutors/by-course/:search', async (req, res) => {
   }
 });
 
-// GET /api/users/tutors
 router.get('/tutors', async (req, res) => {
   try {
     const tutors = await User.aggregate([
       { $match: { role: 'Tutor' } },
+
+      // JOIN tutor profile
       {
         $lookup: {
           from: 'tutorprofiles',
@@ -173,7 +174,14 @@ router.get('/tutors', async (req, res) => {
           as: 'profile',
         },
       },
-      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+      {
+        $unwind: {
+          path: '$profile',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // JOIN courses
       {
         $lookup: {
           from: 'courses',
@@ -182,12 +190,41 @@ router.get('/tutors', async (req, res) => {
           as: 'courseDetails',
         },
       },
+
+      // JOIN feedbacks
+      {
+        $lookup: {
+          from: 'feedbacks',
+          localField: '_id',
+          foreignField: 'tutorUniqueId',
+          as: 'feedbacks',
+        },
+      },
+
+      {
+        $addFields: {
+          avgRating: {
+            $cond: [
+              { $gt: [{ $size: '$feedbacks' }, 0] },
+              { $avg: '$feedbacks.rating' },
+              0,
+            ],
+          },
+          totalRatings: { $size: '$feedbacks' },
+        },
+      },
+
+      // FINAL OUTPUT
       {
         $project: {
           _id: 1,
           firstName: 1,
           lastName: 1,
           profilePicture: '$profile.profilePicture',
+
+          avgRating: 1,
+          totalRatings: 1,
+
           courses: {
             $map: {
               input: '$courseDetails',
@@ -201,7 +238,7 @@ router.get('/tutors', async (req, res) => {
           },
         },
       },
-    ]);
+    ]);                      
 
     res.status(200).json(tutors);
   } catch (err) {
