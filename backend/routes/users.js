@@ -201,6 +201,16 @@ router.get('/tutors', async (req, res) => {
         },
       },
 
+      // JOIN sessions
+      {
+        $lookup: {
+          from: 'sessions',
+          localField: '_id',
+          foreignField: 'tutorID',
+          as: 'sessions',
+        },
+      },
+
       {
         $addFields: {
           avgRating: {
@@ -214,6 +224,16 @@ router.get('/tutors', async (req, res) => {
           latestFeedbackDate: {
             $max: '$feedbacks.createdAt'
           },
+          totalSessions: {$size: '$sessions'},
+          totalCompleted: {
+            $size: {
+              $filter: {
+                input: '$sessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Completed']}
+              }
+            }
+          }
         },
       },
 
@@ -228,6 +248,8 @@ router.get('/tutors', async (req, res) => {
           avgRating: 1,
           totalRatings: 1,
           latestFeedbackDate: 1,
+          totalSessions: 1,
+          totalCompleted: 1,
 
           courses: {
             $map: {
