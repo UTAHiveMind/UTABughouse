@@ -233,6 +233,51 @@ router.get('/tutors', async (req, res) => {
                 cond: { $eq: ['$$session.status', 'Completed']}
               }
             }
+          },
+          totalCancelled: {
+            $size: {
+              $filter: {
+                input: '$sessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Cancelled']}
+              }
+            }
+          },
+          totalCompletedMinutes: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: '$sessions',
+                    as: 'session',
+                    cond: { $eq: ['$$session.status', 'Completed'] }
+                  }
+                },
+                as: 'completedSession',
+                in: '$$completedSession.duration'
+              }
+            }
+          },
+
+          totalCompletedHours: {
+            $divide: [
+              {
+                $sum: {
+                  $map: {
+                    input: {
+                      $filter: {
+                        input: '$sessions',
+                        as: 'session',
+                        cond: { $eq: ['$$session.status', 'Completed'] }
+                      }
+                    },
+                    as: 'completedSession',
+                    in: '$$completedSession.duration'
+                  }
+                }
+              },
+              60
+            ]
           }
         },
       },
@@ -250,6 +295,9 @@ router.get('/tutors', async (req, res) => {
           latestFeedbackDate: 1,
           totalSessions: 1,
           totalCompleted: 1,
+          totalCancelled: 1,
+          totalCompletedMinutes: 1,
+          totalCompletedHours: 1,
 
           courses: {
             $map: {
