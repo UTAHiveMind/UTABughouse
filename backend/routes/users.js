@@ -339,6 +339,12 @@ router.get('/fromDtoD', async (req, res) => {
       });
     }
 
+    end.setHours(23, 59, 59, 999);
+
+    const dateFilter = {};
+    if (fromDate) dateFilter.$gte = start;
+    if (toDate) dateFilter.$lte = end;
+
     const tutors = await User.aggregate([
       { $match: { role: 'Tutor' } },
 
