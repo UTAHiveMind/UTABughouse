@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "../../styles/SystemAnalytics.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
+import { FaFileCsv } from 'react-icons/fa';
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
@@ -80,7 +81,11 @@ function SystemAnalytics() {
               name: `${tutor.firstName} ${tutor.lastName}`,
               profilePic: profile?.profilePicture || DEFAULT_AVATAR,
               avgRating: avgRating,
-              totalSessions: totalSessions
+              totalSessions: tutor.totalSessions,
+              totalCompleted: tutor.totalCompleted,
+              totalCancelled: tutor.totalCancelled,
+              totalCompletedMinutes: tutor.totalCompletedMinutes,
+              totalCompletedHours: tutor.totalCompletedHours,
             };
           } catch (error) {
             console.log(`Error fetching details for tutor ${tutor._id}:`, error.message);
@@ -157,6 +162,86 @@ function SystemAnalytics() {
     navigate(`/tutor/${tutorId}`);
   };
 
+
+  // Function to handle escape each CSV cell
+function csvCellEscape (value) {
+  if (value == null || value == undefined) return "";
+
+  const str = String(value);
+  //the cell value should be wrapped by "" if they contain any characters below
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
+  return str;
+}
+
+//Function build the csv content from database
+function buildCsvContent(data, start, end) {
+    //Headers of columns
+    const headers = [
+      "Tutor Name",
+      "Total Session",
+      "Completed",
+      "Cancelled",
+      "Average Rating",
+      "Total Hours",
+      "Total Minutes"
+    ];
+
+  const rows = data.map(r => {
+    //Combine start and end time
+    const sessionTime = `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
+    //If no show or the session status is cancelled -> the duration is 0
+    const realDuration = r.wasNoShow || r.status === "Cancelled" ? 0 : r.duration;
+    return [
+      r.name,
+      r.totalSessions,
+      r.totalCompleted,
+      r.totalCancelled,
+      r.avgRating,
+      r.totalCompletedHours,
+      r.totalCompletedMinutes
+    ].map(csvCellEscape).join(','); //Escape each cell to match the CSV format
+  });
+
+  //join headers and all rows to be a complete csv
+  return headers.join(',') + "\n" + rows.join('\n');
+}
+
+//Function handle csv file export
+const handleExport = () => {
+  const now = new Date(); //Initiate the current time to name the dowload file
+  const today = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = String(now.getFullYear());
+  //Create file name as format: attendance_report_MM_DD_YYYY.csv
+  const fileName = `system_analytics_${month}_${today}_${year}.csv`;
+
+  //Building the csv content from database by call buildCsvContent function
+  const csvContent = buildCsvContent(tutors, '2026-02-15', '2026-04-15');
+
+  //Initiate the Blob
+  const blob = new Blob (["\ufeff", csvContent], {type: 'text/csv; charset=utf-8;'});
+  const urlTemp = URL.createObjectURL(blob);  //Create temporary link
+
+  const link = document.createElement('a'); //Create anchor tag to trigger download
+  link.setAttribute('href', urlTemp);
+  link.setAttribute('download', fileName);
+
+  link.style.visibility = 'hidden';
+
+  //Add to DOM -> click -> remove it
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  //Free the memory
+  URL.revokeObjectURL(urlTemp);
+}
+
+
+  
+
   // Format the last updated time
   const formatLastUpdated = (date) => {
     if (!date) return "";
@@ -187,6 +272,11 @@ function SystemAnalytics() {
                 disabled={loading}
               >
                 {loading ? "Refreshing..." : "Refresh Data"}
+              </button>
+              <button 
+                className={styles.csvButton}
+                onClick={handleExport}>
+                <FaFileCsv /> Export CSV
               </button>
             </div>
           )}
