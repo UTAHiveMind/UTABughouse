@@ -78,7 +78,9 @@
 
 @media (max-width: 768px) {
   .container {
-    background: var(--main-background-mobile);
+    /* background: var(--main-background-mobile); */
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+
   }
 
   body {
@@ -99,6 +101,7 @@
     justify-content: space-between;
     width: 100%;
     align-items: center;
+    color:white;
   }
 
   .headerSection {
@@ -122,6 +125,7 @@
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
     padding-top: 25px;
+    
   }
 
   .courseTable thead {

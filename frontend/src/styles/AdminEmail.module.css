@@ -16,7 +16,7 @@
   transition: margin-left 0.5s ease;
   height: calc(100vh - 90px);
   overflow: auto;
-  background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5); 
+background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
   color: #fff;               /* White text */
   transition: margin-left 0.5s ease;
 }
@@ -158,7 +158,10 @@
 
 @media (max-width: 768px) {
   .container, .mainContent {
-    background: var(--main-background-mobile);
+    /* background: var(--main-background-mobile); */
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+    padding-bottom: 90px;
+
   }
 
   html, body {
@@ -181,7 +184,8 @@
       /* padding: 15px 20px; */
       border-bottom: none;
       left: 0;
-          background: var(--main-background-mobile);
+      background: var(--main-background-mobile);
+    
   }
 
   .heading {
@@ -196,6 +200,7 @@
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
     padding-top: 25px;
+      color: #007bff;
   }
 
   .formContainer {

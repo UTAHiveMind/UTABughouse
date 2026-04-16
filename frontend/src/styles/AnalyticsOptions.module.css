@@ -131,15 +131,22 @@
 @media (max-width: 768px) {
   .pageHeader h1 {
     font-weight: var(--main-title-font-weight-mobile);
+
   }
+ .analyticsCard {
+  width:20rem;
+ }
+
 
   .pageHeader h1, .pageHeader p {
-    color: var(--main-title-color-mobile);
+    color: whitesmoke;
   }
 
 
   .container {
-    background: var(--main-background-mobile);
+    /* background: var(--main-background-mobile); */
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+
   }
 }
 

@@ -30,6 +30,7 @@
   padding-top: 100px;
   width: 100%;
   transition: margin-left 0.5s ease;
+  
 }
 
 .mainContentCollapsed {
@@ -167,7 +168,8 @@
 
 @media (max-width: 768px) {
   .container {
-    background: var(--main-background-mobile);
+  background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+
   }
 
   .mainContent {
@@ -205,6 +207,7 @@
     width: 100%;
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
+    color: #007bff;
   }
 
   .currentLogo {

@@ -5,8 +5,8 @@ html, body {
   height: 100%;
   overflow-x: hidden;
   font-family: sans-serif;
-background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5);}
-
+  background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+}
 .container {
   display: flex;
   min-height: 100vh;
@@ -42,6 +42,7 @@ background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5);}
   border-bottom: #ddd;
   max-width: 100vw;
   transition: left 0.5s ease;
+  width: calc(100%);
 }
 
 .headerSectionCollapsed {
@@ -257,18 +258,23 @@ background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5);}
 
 @media (max-width: 768px) {
   .container {
-    background: var(--main-background-mobile);
+  background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);  
+  overflow-y: auto;
+
   }
 
   html, body {
 
   }
   .mainContent {
-      margin-left: 0;
+    margin-left: 0;
+    padding-bottom: 90px;
+     overflow-y: auto;
   }
 
   .mainContent, .mainContentCollapsed {
       margin-left: 0;
+      
   }
 
   .headerSection {
@@ -280,7 +286,9 @@ background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5);}
       /* padding: 15px 20px; */
       border-bottom: none;
       left: 0;
-          background: var(--main-background-mobile);
+      background: var(--main-background-mobile);
+       width: calc(100%);
+     
   }
 
   .heading {
@@ -290,11 +298,11 @@ background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5);}
     align-items: center;
     font-size: 2rem;
     /* color: black; */
-    margin: 0;
-    padding-bottom: 20px;
+    margin:0;
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
     padding-top: 25px;
+     color: #007bff;
   }
 
   .courseTable thead {
@@ -312,4 +320,7 @@ background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5);}
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
 }
+.courseTable tbody {
+    max-height: calc(100vh - 340px);
+  }
 }

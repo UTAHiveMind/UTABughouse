@@ -4,7 +4,7 @@
   align-items: flex-start;   /* keep content near top */
   min-height: 100vh;
   /* background: linear-gradient(135deg, #007bff, #6f42c1); */
-  background: linear-gradient(to bottom right, #5750bb, #796be6, #5a57b5);
+  background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
   margin-left :80px;/*accounts for sidebar when its minimized*/
   overflow-x: hidden;
 }
@@ -194,7 +194,8 @@ background: linear-gradient(to bottom right, #a78bfa, #7c3aed);
   .container {
     margin-left: 0;
     width: 100%;
-    background: var(--main-background-mobile);
+    /* background: var(--main-background-mobile); */
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
 
   } 
 
@@ -203,8 +204,8 @@ background: linear-gradient(to bottom right, #a78bfa, #7c3aed);
   }
 
   .pageHeader  h1, .pageHeader  p {
-    /* color: black; */
-    color: var(--main-title-color-mobile);
+    color: white;
+    /* color: var(--main-title-color-mobile); */
   }
 
   .content {
@@ -218,6 +219,7 @@ background: linear-gradient(to bottom right, #a78bfa, #7c3aed);
     /* padding-bottom: 90px; */
     max-height: 95vh;
     overflow-y: auto;
+    padding-bottom: 90px;
   }
 
   .cardsContainer {
@@ -232,12 +234,13 @@ background: linear-gradient(to bottom right, #a78bfa, #7c3aed);
 
 .adminCard {
   padding: .5rem;
-  width: 20rem;
+  width: 18rem;
   display: flex;
   flex-direction: column;
   position: relative;
   /* overflow: auto; */
   border: 0.5px outset rgb(192, 192, 192);
+  
 }
 
 
