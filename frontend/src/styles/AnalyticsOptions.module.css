@@ -34,12 +34,14 @@
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.07);
     padding: 2rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    /* transition: all 0.3s ease; */
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(4px);
   }
   
   .analyticsCard:hover {
@@ -54,6 +56,7 @@
   .analyticsCard:last-child {
     border-top: 4px solid  #9b59b6;
   }
+
   
   .cardIcon {
     width: 3.5rem;
@@ -63,21 +66,31 @@
     align-items: center;
     justify-content: center;
     border-radius: 12px;
+
+  }
+
+  .analyticsCard:hover .cardIcon{
+    transform: scale(1.1) rotate(6deg);
+
   }
   
   .analyticsCard:first-child .cardIcon {
     color: #34A853;
-    background-color: rgba(66, 133, 244, 0.1);
+    background-color: rgba(70, 106, 163, 0.6);
+    box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
   }
   
   .analyticsCard:last-child .cardIcon {
     color:  #9b59b6;
-    background-color: rgba(52, 168, 83, 0.1);
+    /* background-color: rgba(52, 168, 83, 0.1); */
+    background-color: rgba(46, 204, 113, 0.6);
+    box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
   }
   
   .cardIcon svg {
     width: 1.8rem;
     height: 1.8rem;
+    color: white;
   }
   
   .analyticsCard h2 {
@@ -118,15 +131,22 @@
 @media (max-width: 768px) {
   .pageHeader h1 {
     font-weight: var(--main-title-font-weight-mobile);
+
   }
+ .analyticsCard {
+  width:20rem;
+ }
+
 
   .pageHeader h1, .pageHeader p {
-    color: var(--main-title-color-mobile);
+    color: whitesmoke;
   }
 
 
   .container {
-    background: var(--main-background-mobile);
+    /* background: var(--main-background-mobile); */
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+
   }
 }
 

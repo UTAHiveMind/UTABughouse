@@ -3,7 +3,8 @@
   justify-content: center;   /* horizontally center child */
   align-items: flex-start;   /* keep content near top */
   min-height: 100vh;
-  background: linear-gradient(135deg, #007bff, #6f42c1);
+  /* background: linear-gradient(135deg, #007bff, #6f42c1); */
+  background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
   margin-left :80px;/*accounts for sidebar when its minimized*/
   overflow-x: hidden;
 }
@@ -64,13 +65,15 @@
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.07);
   padding: 2rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  /* border: 1px solid rgba(0, 0, 0, 0.05); */
+  border: 1px solid rgba(255, 255, 255, 0.35);
   height: 100%;
+  backdrop-filter: blur(4px);
 }
 
 .adminCard:hover {
@@ -102,22 +105,26 @@
 
 .adminCard:nth-child(1) .cardIcon {
   color: #3498db;
-  background-color: rgba(52, 152, 219, 0.1);
+  background-color: rgba(52, 152, 219, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
 }
 
 .adminCard:nth-child(2) .cardIcon {
   color: #2ecc71;
-  background-color: rgba(46, 204, 113, 0.1);
+background: linear-gradient(to bottom right, #34d399, #059669);
+  box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
 }
 
 .adminCard:nth-child(3) .cardIcon {
   color: #9b59b6;
-  background-color: rgba(155, 89, 182, 0.1);
+background: linear-gradient(to bottom right, #a78bfa, #7c3aed); 
+ box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
 }
 
 .cardIcon svg {
   width: 1.8rem;
   height: 1.8rem;
+  color: white;
 }
 
 .adminCard h2 {
@@ -133,6 +140,10 @@
   line-height: 1.6;
   flex-grow: 1;
 }
+.adminCard:hover .cardIcon {
+  transform: scale(1.1) rotate(6deg);
+}
+
 
 .cardAction {
   display: flex;
@@ -183,7 +194,8 @@
   .container {
     margin-left: 0;
     width: 100%;
-    background: var(--main-background-mobile);
+    /* background: var(--main-background-mobile); */
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
 
   } 
 
@@ -192,8 +204,8 @@
   }
 
   .pageHeader  h1, .pageHeader  p {
-    /* color: black; */
-    color: var(--main-title-color-mobile);
+    color: white;
+    /* color: var(--main-title-color-mobile); */
   }
 
   .content {
@@ -207,6 +219,7 @@
     /* padding-bottom: 90px; */
     max-height: 95vh;
     overflow-y: auto;
+    padding-bottom: 90px;
   }
 
   .cardsContainer {
@@ -221,12 +234,13 @@
 
 .adminCard {
   padding: .5rem;
-  width: 20rem;
+  width: 18rem;
   display: flex;
   flex-direction: column;
   position: relative;
   /* overflow: auto; */
   border: 0.5px outset rgb(192, 192, 192);
+  
 }
 
 
