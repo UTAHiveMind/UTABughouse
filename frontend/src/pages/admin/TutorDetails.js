@@ -190,15 +190,22 @@ function TutorDetails() {
               <span className={styles.statLabel}>Total Sessions</span>
             </div>
             <div className={styles.statBox}>
-              <span className={styles.statNumber}>{students.length}</span>
-              <span className={styles.statLabel}>Students Tutored</span>
-            </div>
-            <div className={styles.statBox}>
               <span className={styles.statNumber}>
                 {sessions.filter(s => s.status === 'Completed').length}
               </span>
               <span className={styles.statLabel}>Completed Sessions</span>
             </div>
+            <div className={styles.statBox}>
+              <span className={styles.statNumber}>
+                {sessions.filter(s => s.status === 'Cancelled').length}
+              </span>
+              <span className={styles.statLabel}>Cancelled Sessions</span>
+            </div>
+            <div className={styles.statBox}>
+              <span className={styles.statNumber}>{students.length}</span>
+              <span className={styles.statLabel}>Students Tutored</span>
+            </div>
+
           </div>
         </div>
         
