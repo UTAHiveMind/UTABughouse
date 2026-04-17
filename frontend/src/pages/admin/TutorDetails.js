@@ -35,91 +35,32 @@ function TutorDetails() {
     const fetchTutorData = async () => {
       try {
         setLoading(true);
-        console.log("Starting to fetch data for tutorId:", tutorId);
-        
-        // 1. Fetch tutor basic information
-        console.log("Fetching user data...");
-        const tutorResponse = await axios.get(`${BACKEND_URL}/api/users/${tutorId}`);
-        console.log("User data received:", tutorResponse.data);
-        setTutor(tutorResponse.data);
-        
-        // 2. Fetch tutor profile (corrected to use query parameter if that's your API format)
-        console.log("Fetching profile data...");
-        try {
-          // Try both formats to see which one works
-          let profileData = null;
-          try {
-            const profileResponse = await axios.get(`${BACKEND_URL}/api/profile/${tutorId}`);
-            profileData = profileResponse.data;
-          } catch (pathError) {
-            console.log("Path parameter approach failed, trying query parameter");
-            const profileResponse = await axios.get(`${BACKEND_URL}/api/profile?userId=${tutorId}`);
-            profileData = profileResponse.data;
-          }
-          
-          console.log("Profile data received:", profileData);
-          setProfile(profileData);
-        } catch (profileError) {
-          console.error("Error fetching profile:", profileError);
-          console.log("Continuing without profile data");
-        }
-        
-        // 3. Fetch all sessions for this tutor
-        console.log("Fetching sessions data...");
-        const sessionsResponse = await axios.get(`${BACKEND_URL}/api/sessions?tutorID=${tutorId}`);
-        console.log("Sessions data received:", sessionsResponse.data);
-        const tutorSessions = sessionsResponse.data || [];
-        
-        // Sort sessions by date (newest first)
-        tutorSessions.sort((a, b) => new Date(b.sessionTime) - new Date(a.sessionTime));
-        
-        // Get unique students from sessions
-        const studentIds = [...new Set(tutorSessions.map(session => session.studentID))];
-        console.log("Unique student IDs:", studentIds);
-        
-        // Fetch student information
-        console.log("Fetching student data...");
-        const studentData = [];
-        const studentMap = {};
-        
-        for (const studentId of studentIds) {
-          try {
-            console.log("Fetching student with ID:", studentId);
-            const studentResponse = await axios.get(`${BACKEND_URL}/api/users/${studentId}`);
-            const student = studentResponse.data;
-            studentData.push(student);
-            studentMap[studentId] = student;
-          } catch (error) {
-            console.error(`Error fetching student ${studentId}:`, error);
-          }
-        }
-        
-        console.log("Student data received:", studentData);
-        setStudents(studentData);
-        
-        // Add student names to sessions
-        const sessionsWithStudentNames = tutorSessions.map(session => {
-          const student = studentMap[session.studentID];
-          return {
-            ...session,
-            studentName: student 
-              ? `${student.firstName} ${student.lastName}`
-              : "Unknown Student"
-          };
+
+        const response = await axios.get(`${BACKEND_URL}/api/users/tutors/${tutorId}/details`);
+
+        const data = response.data;
+
+        setTutor({
+          _id: data._id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          rating: data.rating,
         });
-        
-        setSessions(sessionsWithStudentNames);
+        setProfile(data.profile);
+        setStudents(data.students);
+        setSessions(data.sessions);
+
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching tutor details:", error);
-        setError(`Failed to load tutor details: ${error.message}`);
+        console.error(error);
+        setError("Failed to load tutor details");
         setLoading(false);
       }
     };
-    
-    if (tutorId) {
-      fetchTutorData();
-    }
+
+    if (tutorId) fetchTutorData();
   }, [tutorId]);
 
   // Format date for display
