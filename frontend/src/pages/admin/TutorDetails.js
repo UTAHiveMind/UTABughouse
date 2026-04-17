@@ -82,7 +82,7 @@ function csvCellEscape (value) {
 
 // Function to build CSV content from tutor session data
 function buildCsvContent(data) {
-    const tutorName = tutor.firstName + tutor.lastName;
+    const tutorName = tutor ? `${tutor.firstName} ${tutor.lastName}` : "Unknown Tutor";
     //Headers of columns
     const headers = [
       "Date",
@@ -97,17 +97,44 @@ function buildCsvContent(data) {
   const rows = data.map(r => {
     // For CSV output, treat no-show or cancelled sessions as 0 duration
     const realDuration = r.wasNoShow || r.status === "Cancelled" ? 0 : r.duration;
+    //Get date
+    const date = new Date(r.sessionTime);
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    const formattedDate = `${mm}-${dd}-${yyyy}`;
+
+    //Get session time
+    const startTime = new Date(r.sessionTime);
+    const endTime = new Date(startTime.getTime() + r.duration*60000);
+    const sessionTime = `${startTime.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })} - ${endTime.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })}`;
+
+    const formatTime = (dateString) => {
+      if (!dateString) return "N/A";
+
+      return new Date(dateString).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
 
     return [
-      r.date,
+      formattedDate,
       r.studentName,
-      r.sessionTime,
+      sessionTime,
       r.status,
-      r.wasNoShow ? "No Show" : r.checkInTime,
-      r.wasNoShow ? "No Show" : r.checkOutTime,
+      r.wasNoShow ? "No Show" : formatTime(r.checkInTime),
+      r.wasNoShow ? "No Show" : formatTime(r.checkOutTime),
       realDuration,
-      r.tutorName,
-
     ].map(csvCellEscape).join(','); //Escape each cell to match the CSV format
   });
 
