@@ -374,7 +374,7 @@ const handleExport = () => {
                       <td>{session.studentName || "Unknown Student"}</td>
                       <td>{formatDate(session.sessionTime)}</td>
                       <td>{formatTime(session.sessionTime)}</td>
-                      <td>{session.duration} minutes</td>
+                      <td>{session.status === "Cancelled" ? 0 : session.duration} minutes</td>
                       <td>
                         <span className={`${styles.status} ${styles[session.status.toLowerCase()]}`}>
                           {session.status}
