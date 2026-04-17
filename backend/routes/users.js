@@ -543,6 +543,296 @@ router.get('/fromDtoD', async (req, res) => {
   }
 });
 
+// Get detailed analytics data for a single tutor
+router.get('/tutors/:id/details', async (req, res) => {
+  try {
+    const tutorId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(tutorId)) {
+      return res.status(400).json({ message: 'Invalid tutor ID' });
+    }
+
+    const tutorObjectId = new mongoose.Types.ObjectId(tutorId);
+
+    const result = await User.aggregate([
+      {
+        $match: {
+          _id: tutorObjectId,
+          role: 'Tutor',
+        },
+      },
+
+      // JOIN tutor profile
+      {
+        $lookup: {
+          from: 'tutorprofiles',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'profile',
+        },
+      },
+      {
+        $unwind: {
+          path: '$profile',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // JOIN feedbacks for rating stats
+      {
+        $lookup: {
+          from: 'feedbacks',
+          localField: '_id',
+          foreignField: 'tutorUniqueId',
+          as: 'feedbacks',
+        },
+      },
+
+      // JOIN sessions for this tutor
+      {
+        $lookup: {
+          from: 'sessions',
+          localField: '_id',
+          foreignField: 'tutorID',
+          as: 'sessions',
+        },
+      },
+
+      // JOIN attendances for all tutor sessions
+      {
+        $lookup: {
+          from: 'attendances',
+          localField: 'sessions._id',
+          foreignField: 'sessionID',
+          as: 'attendances',
+        },
+      },
+
+      // JOIN all students referenced by tutor's sessions
+      {
+        $lookup: {
+          from: 'users',
+          let: { studentIds: '$sessions.studentID' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ['$_id', '$$studentIds'],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                firstName: 1,
+                lastName: 1,
+                email: 1,
+              },
+            },
+          ],
+          as: 'studentDetails',
+        },
+      },
+
+      // Build stats + session rows + unique student list
+      {
+        $addFields: {
+          avgRating: {
+            $cond: [
+              { $gt: [{ $size: '$feedbacks' }, 0] },
+              { $avg: '$feedbacks.rating' },
+              0,
+            ],
+          },
+
+          totalRatings: { $size: '$feedbacks' },
+          totalSessions: { $size: '$sessions' },
+
+          completedSessions: {
+            $size: {
+              $filter: {
+                input: '$sessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Completed'] },
+              },
+            },
+          },
+
+          cancelledSessions: {
+            $size: {
+              $filter: {
+                input: '$sessions',
+                as: 'session',
+                cond: { $eq: ['$$session.status', 'Cancelled'] },
+              },
+            },
+          },
+
+          studentsTutored: {
+            $size: {
+              $setUnion: [
+                [],
+                {
+                  $map: {
+                    input: '$sessions',
+                    as: 'session',
+                    in: '$$session.studentID',
+                  },
+                },
+              ],
+            },
+          },
+
+          sessionHistory: {
+            $map: {
+              input: {
+                $sortArray: {
+                  input: '$sessions',
+                  sortBy: { sessionTime: -1 },
+                },
+              },
+              as: 'session',
+              in: {
+                $let: {
+                  vars: {
+                    matchedStudent: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: '$studentDetails',
+                            as: 'student',
+                            cond: {
+                              $eq: ['$$student._id', '$$session.studentID'],
+                            },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                    matchedAttendance: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: '$attendances',
+                            as: 'att',
+                            cond: {
+                              $eq: ['$$att.sessionID', '$$session._id'],
+                            },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                  in: {
+                    _id: '$$session._id',
+                    studentID: '$$session.studentID',
+                    studentName: {
+                      $cond: [
+                        { $ifNull: ['$$matchedStudent', false] },
+                        {
+                          $concat: [
+                            '$$matchedStudent.firstName',
+                            ' ',
+                            '$$matchedStudent.lastName',
+                          ],
+                        },
+                        'Unknown Student',
+                      ],
+                    },
+                    studentEmail: {
+                      $ifNull: ['$$matchedStudent.email', ''],
+                    },
+                    sessionTime: '$$session.sessionTime',
+                    duration: '$$session.duration',
+                    status: '$$session.status',
+
+                    // attendance fields
+                    checkInTime: {
+                      $ifNull: ['$$matchedAttendance.checkInTime', null],
+                    },
+                    checkOutTime: {
+                      $ifNull: ['$$matchedAttendance.checkOutTime', null],
+                    },
+                    checkInStatus: {
+                      $ifNull: ['$$matchedAttendance.checkInStatus', 'N/A'],
+                    },
+                    checkOutStatus: {
+                      $ifNull: ['$$matchedAttendance.checkOutStatus', 'N/A'],
+                    },
+                    wasNoShow: {
+                      $ifNull: ['$$matchedAttendance.wasNoShow', false],
+                    },
+                  },
+                },
+              },
+            },
+          },
+
+          studentList: {
+            $map: {
+              input: '$studentDetails',
+              as: 'student',
+              in: {
+                _id: '$$student._id',
+                firstName: '$$student.firstName',
+                lastName: '$$student.lastName',
+                fullName: {
+                  $concat: ['$$student.firstName', ' ', '$$student.lastName'],
+                },
+                email: '$$student.email',
+              },
+            },
+          },
+        },
+      },
+
+      {
+        $project: {
+          _id: 1,
+          firstName: 1,
+          lastName: 1,
+          email: 1,
+          phone: 1,
+          rating: {
+            $round: ['$avgRating', 1],
+          },
+
+          profile: {
+            major: { $ifNull: ['$profile.major', 'Not Specified'] },
+            currentYear: { $ifNull: ['$profile.currentYear', 'Not Specified'] },
+            bio: { $ifNull: ['$profile.bio', ''] },
+            profilePicture: '$profile.profilePicture',
+          },
+
+          stats: {
+            totalSessions: '$totalSessions',
+            completedSessions: '$completedSessions',
+            cancelledSessions: '$cancelledSessions',
+            studentsTutored: '$studentsTutored',
+            totalRatings: '$totalRatings',
+          },
+
+          students: '$studentList',
+          sessions: '$sessionHistory',
+        },
+      },
+    ]);
+
+    if (!result || result.length === 0) {
+      return res.status(404).json({ message: 'Tutor not found' });
+    }
+
+    return res.status(200).json(result[0]);
+  } catch (err) {
+    console.error('Error fetching tutor details:', err);
+    return res.status(500).json({
+      message: 'Failed to fetch tutor details',
+      error: err.message,
+    });
+  }
+});
+
 
 // NEW ROUTE: Fetch a single user by ID
 router.get('/:id', async (req, res) => {

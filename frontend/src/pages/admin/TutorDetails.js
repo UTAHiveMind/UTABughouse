@@ -4,6 +4,8 @@ import axios from "axios";
 import styles from "../../styles/TutorDetails.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
+import { FaFileCsv } from 'react-icons/fa';
+import { FaArrowLeft } from "react-icons/fa";
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
@@ -35,92 +37,143 @@ function TutorDetails() {
     const fetchTutorData = async () => {
       try {
         setLoading(true);
-        console.log("Starting to fetch data for tutorId:", tutorId);
-        
-        // 1. Fetch tutor basic information
-        console.log("Fetching user data...");
-        const tutorResponse = await axios.get(`${BACKEND_URL}/api/users/${tutorId}`);
-        console.log("User data received:", tutorResponse.data);
-        setTutor(tutorResponse.data);
-        
-        // 2. Fetch tutor profile (corrected to use query parameter if that's your API format)
-        console.log("Fetching profile data...");
-        try {
-          // Try both formats to see which one works
-          let profileData = null;
-          try {
-            const profileResponse = await axios.get(`${BACKEND_URL}/api/profile/${tutorId}`);
-            profileData = profileResponse.data;
-          } catch (pathError) {
-            console.log("Path parameter approach failed, trying query parameter");
-            const profileResponse = await axios.get(`${BACKEND_URL}/api/profile?userId=${tutorId}`);
-            profileData = profileResponse.data;
-          }
-          
-          console.log("Profile data received:", profileData);
-          setProfile(profileData);
-        } catch (profileError) {
-          console.error("Error fetching profile:", profileError);
-          console.log("Continuing without profile data");
-        }
-        
-        // 3. Fetch all sessions for this tutor
-        console.log("Fetching sessions data...");
-        const sessionsResponse = await axios.get(`${BACKEND_URL}/api/sessions?tutorID=${tutorId}`);
-        console.log("Sessions data received:", sessionsResponse.data);
-        const tutorSessions = sessionsResponse.data || [];
-        
-        // Sort sessions by date (newest first)
-        tutorSessions.sort((a, b) => new Date(b.sessionTime) - new Date(a.sessionTime));
-        
-        // Get unique students from sessions
-        const studentIds = [...new Set(tutorSessions.map(session => session.studentID))];
-        console.log("Unique student IDs:", studentIds);
-        
-        // Fetch student information
-        console.log("Fetching student data...");
-        const studentData = [];
-        const studentMap = {};
-        
-        for (const studentId of studentIds) {
-          try {
-            console.log("Fetching student with ID:", studentId);
-            const studentResponse = await axios.get(`${BACKEND_URL}/api/users/${studentId}`);
-            const student = studentResponse.data;
-            studentData.push(student);
-            studentMap[studentId] = student;
-          } catch (error) {
-            console.error(`Error fetching student ${studentId}:`, error);
-          }
-        }
-        
-        console.log("Student data received:", studentData);
-        setStudents(studentData);
-        
-        // Add student names to sessions
-        const sessionsWithStudentNames = tutorSessions.map(session => {
-          const student = studentMap[session.studentID];
-          return {
-            ...session,
-            studentName: student 
-              ? `${student.firstName} ${student.lastName}`
-              : "Unknown Student"
-          };
+
+        const response = await axios.get(`${BACKEND_URL}/api/users/tutors/${tutorId}/details`);
+
+        const data = response.data;
+
+        setTutor({
+          _id: data._id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          rating: data.rating,
         });
-        
-        setSessions(sessionsWithStudentNames);
+        setProfile(data.profile);
+        setStudents(data.students);
+        setSessions(data.sessions);
+
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching tutor details:", error);
-        setError(`Failed to load tutor details: ${error.message}`);
+        console.error(error);
+        setError("Failed to load tutor details");
         setLoading(false);
       }
     };
-    
-    if (tutorId) {
-      fetchTutorData();
-    }
+
+    if (tutorId) fetchTutorData();
   }, [tutorId]);
+
+
+
+
+  // Function to handle escape each CSV cell
+function csvCellEscape (value) {
+  if (value == null || value == undefined) return "";
+
+  const str = String(value);
+  //the cell value should be wrapped by "" if they contain any characters below
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
+  return str;
+}
+
+// Function to build CSV content from tutor session data
+function buildCsvContent(data) {
+    const tutorName = tutor ? `${tutor.firstName} ${tutor.lastName}` : "Unknown Tutor";
+    //Headers of columns
+    const headers = [
+      "Date",
+      "Student Name",
+      "Session Time",
+      "Status",
+      "Check-in Time",
+      "Check-out Time",
+      "Duration",
+    ];
+
+  const rows = data.map(r => {
+    // For CSV output, treat no-show or cancelled sessions as 0 duration
+    const realDuration = r.wasNoShow || r.status === "Cancelled" ? 0 : r.duration;
+    //Get date
+    const date = new Date(r.sessionTime);
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    const formattedDate = `${mm}-${dd}-${yyyy}`;
+
+    //Get session time
+    const startTime = new Date(r.sessionTime);
+    const endTime = new Date(startTime.getTime() + r.duration*60000);
+    const sessionTime = `${startTime.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })} - ${endTime.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })}`;
+
+    const formatTime = (dateString) => {
+      if (!dateString) return "N/A";
+
+      return new Date(dateString).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
+
+    return [
+      formattedDate,
+      r.studentName,
+      sessionTime,
+      r.status,
+      r.wasNoShow ? "No Show" : formatTime(r.checkInTime),
+      r.wasNoShow ? "No Show" : formatTime(r.checkOutTime),
+      realDuration,
+    ].map(csvCellEscape).join(','); //Escape each cell to match the CSV format
+  });
+
+  //join headers and all rows to be a complete csv
+  return tutorName + "\n\n" + headers.join(',') + "\n" + rows.join('\n');
+}
+
+//Function handle csv file export
+const handleExport = () => {
+  const now = new Date(); //Initiate the current time to name the dowload file
+  const today = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = String(now.getFullYear());
+  // Create file name in format: tutor_report_MM_DD_YYYY.csv
+  const fileName = `tutor_details_report_${month}_${today}_${year}.csv`;
+
+  // Build CSV content from the current tutor session data
+  const csvContent = buildCsvContent(sessions);
+
+  //Initiate the Blob
+  const blob = new Blob (["\ufeff", csvContent], {type: 'text/csv; charset=utf-8;'});
+  const urlTemp = URL.createObjectURL(blob);  //Create temporary link
+
+  const link = document.createElement('a'); //Create anchor tag to trigger download
+  link.setAttribute('href', urlTemp);
+  link.setAttribute('download', fileName);
+
+  link.style.visibility = 'hidden';
+
+  //Add to DOM -> click -> remove it
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  //Free the memory
+  URL.revokeObjectURL(urlTemp);
+}
+
+
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -184,9 +237,10 @@ function TutorDetails() {
             className={styles.backButton}
             onClick={() => window.history.back()}
           >
-            Back to Analytics
+            <FaArrowLeft />
           </button>
         </div>
+
         
         {/* Tutor Profile Section */}
         <div className={styles.profileSection}>
@@ -249,15 +303,22 @@ function TutorDetails() {
               <span className={styles.statLabel}>Total Sessions</span>
             </div>
             <div className={styles.statBox}>
-              <span className={styles.statNumber}>{students.length}</span>
-              <span className={styles.statLabel}>Students Tutored</span>
-            </div>
-            <div className={styles.statBox}>
               <span className={styles.statNumber}>
                 {sessions.filter(s => s.status === 'Completed').length}
               </span>
               <span className={styles.statLabel}>Completed Sessions</span>
             </div>
+            <div className={styles.statBox}>
+              <span className={styles.statNumber}>
+                {sessions.filter(s => s.status === 'Cancelled').length}
+              </span>
+              <span className={styles.statLabel}>Cancelled Sessions</span>
+            </div>
+            <div className={styles.statBox}>
+              <span className={styles.statNumber}>{students.length}</span>
+              <span className={styles.statLabel}>Students Tutored</span>
+            </div>
+
           </div>
         </div>
         
@@ -284,7 +345,15 @@ function TutorDetails() {
         
         {/* Sessions Section */}
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Session History</h2>
+          <div className={styles.historyNav}>
+            <h2 className={styles.sectionTitle}>Session History</h2>
+            <button 
+              className={styles.csvButton}
+              onClick={handleExport}>
+              <FaFileCsv /> Export CSV
+            </button>
+          </div>
+
           {sessions.length === 0 ? (
             <p>No sessions yet.</p>
           ) : (
@@ -305,7 +374,7 @@ function TutorDetails() {
                       <td>{session.studentName || "Unknown Student"}</td>
                       <td>{formatDate(session.sessionTime)}</td>
                       <td>{formatTime(session.sessionTime)}</td>
-                      <td>{session.duration} minutes</td>
+                      <td>{session.status === "Cancelled" ? 0 : session.duration} minutes</td>
                       <td>
                         <span className={`${styles.status} ${styles[session.status.toLowerCase()]}`}>
                           {session.status}
