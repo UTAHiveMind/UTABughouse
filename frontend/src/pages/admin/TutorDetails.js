@@ -5,6 +5,7 @@ import styles from "../../styles/TutorDetails.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
 import { FaFileCsv } from 'react-icons/fa';
+import { FaArrowLeft } from "react-icons/fa";
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
@@ -236,13 +237,8 @@ const handleExport = () => {
             className={styles.backButton}
             onClick={() => window.history.back()}
           >
-            Back to Analytics
+            <FaArrowLeft />
           </button>
-        <button 
-          className={styles.csvButton}
-          onClick={handleExport}>
-          <FaFileCsv /> Export CSV
-        </button>
         </div>
 
         
@@ -349,7 +345,15 @@ const handleExport = () => {
         
         {/* Sessions Section */}
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Session History</h2>
+          <div className={styles.historyNav}>
+            <h2 className={styles.sectionTitle}>Session History</h2>
+            <button 
+              className={styles.csvButton}
+              onClick={handleExport}>
+              <FaFileCsv /> Export CSV
+            </button>
+          </div>
+
           {sessions.length === 0 ? (
             <p>No sessions yet.</p>
           ) : (
