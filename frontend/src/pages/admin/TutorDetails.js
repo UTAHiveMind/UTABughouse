@@ -4,6 +4,7 @@ import axios from "axios";
 import styles from "../../styles/TutorDetails.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
+import { FaFileCsv } from 'react-icons/fa';
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
@@ -62,6 +63,89 @@ function TutorDetails() {
 
     if (tutorId) fetchTutorData();
   }, [tutorId]);
+
+
+
+
+  // Function to handle escape each CSV cell
+function csvCellEscape (value) {
+  if (value == null || value == undefined) return "";
+
+  const str = String(value);
+  //the cell value should be wrapped by "" if they contain any characters below
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
+  return str;
+}
+
+// Function to build CSV content from tutor session data
+function buildCsvContent(data) {
+    const tutorName = tutor.firstName + tutor.lastName;
+    //Headers of columns
+    const headers = [
+      "Date",
+      "Student Name",
+      "Session Time",
+      "Status",
+      "Check-in Time",
+      "Check-out Time",
+      "Duration",
+    ];
+
+  const rows = data.map(r => {
+    // For CSV output, treat no-show or cancelled sessions as 0 duration
+    const realDuration = r.wasNoShow || r.status === "Cancelled" ? 0 : r.duration;
+
+    return [
+      r.date,
+      r.studentName,
+      r.sessionTime,
+      r.status,
+      r.wasNoShow ? "No Show" : r.checkInTime,
+      r.wasNoShow ? "No Show" : r.checkOutTime,
+      realDuration,
+      r.tutorName,
+
+    ].map(csvCellEscape).join(','); //Escape each cell to match the CSV format
+  });
+
+  //join headers and all rows to be a complete csv
+  return tutorName + "\n\n" + headers.join(',') + "\n" + rows.join('\n');
+}
+
+//Function handle csv file export
+const handleExport = () => {
+  const now = new Date(); //Initiate the current time to name the dowload file
+  const today = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = String(now.getFullYear());
+  // Create file name in format: tutor_report_MM_DD_YYYY.csv
+  const fileName = `tutor_details_report_${month}_${today}_${year}.csv`;
+
+  // Build CSV content from the current tutor session data
+  const csvContent = buildCsvContent(sessions);
+
+  //Initiate the Blob
+  const blob = new Blob (["\ufeff", csvContent], {type: 'text/csv; charset=utf-8;'});
+  const urlTemp = URL.createObjectURL(blob);  //Create temporary link
+
+  const link = document.createElement('a'); //Create anchor tag to trigger download
+  link.setAttribute('href', urlTemp);
+  link.setAttribute('download', fileName);
+
+  link.style.visibility = 'hidden';
+
+  //Add to DOM -> click -> remove it
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  //Free the memory
+  URL.revokeObjectURL(urlTemp);
+}
+
+
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -127,7 +211,13 @@ function TutorDetails() {
           >
             Back to Analytics
           </button>
+        <button 
+          className={styles.csvButton}
+          onClick={handleExport}>
+          <FaFileCsv /> Export CSV
+        </button>
         </div>
+
         
         {/* Tutor Profile Section */}
         <div className={styles.profileSection}>
