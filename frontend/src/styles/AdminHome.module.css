@@ -194,8 +194,8 @@ background: linear-gradient(to bottom right, #a78bfa, #7c3aed);
   .container {
     margin-left: 0;
     width: 100%;
-    /* background: var(--main-background-mobile); */
-    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+    background: var(--main-background-mobile);
+    /* background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075); */
 
   } 
 
@@ -204,8 +204,8 @@ background: linear-gradient(to bottom right, #a78bfa, #7c3aed);
   }
 
   .pageHeader  h1, .pageHeader  p {
-    color: white;
-    /* color: var(--main-title-color-mobile); */
+    /* color: white; */
+    color: var(--main-title-color-mobile);
   }
 
   .content {

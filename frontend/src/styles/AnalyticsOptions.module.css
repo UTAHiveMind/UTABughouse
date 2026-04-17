@@ -139,13 +139,12 @@
 
 
   .pageHeader h1, .pageHeader p {
-    color: whitesmoke;
+    color: var(--main-title-color-mobile);
   }
 
 
   .container {
-    /* background: var(--main-background-mobile); */
-    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+    background: var(--main-background-mobile);
 
   }
 }

@@ -258,7 +258,8 @@ html, body {
 
 @media (max-width: 768px) {
   .container {
-  background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);  
+  /* background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);   */
+  background: var(--main-background-mobile);
   overflow-y: auto;
 
   }
@@ -297,12 +298,10 @@ html, body {
     width: 100%;
     align-items: center;
     font-size: 2rem;
-    /* color: black; */
     margin:0;
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
     padding-top: 25px;
-     color: #007bff;
   }
 
   .courseTable thead {
@@ -310,7 +309,7 @@ html, body {
     top: 0;
     /* background: #007bff; */
     /* background: linear-gradient(rgb(81, 165, 254),#0b7df6); */
-    background: linear-gradient(rgb(107, 146, 253), rgb(38, 93, 201));
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
     color: white;
     z-index: 10;
     display: table;
@@ -319,8 +318,9 @@ html, body {
     /* border-radius: 16px; */
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
-}
-.courseTable tbody {
+  }
+
+  .courseTable tbody {
     max-height: calc(100vh - 340px);
   }
 }

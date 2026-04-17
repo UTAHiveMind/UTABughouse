@@ -262,9 +262,7 @@ html, body {
 @media (max-width: 768px) {
 
 .container {
-    /* background: var(--main-background-mobile); */
-      background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
-
+    background: var(--main-background-mobile);
 }
 
 html, body {
@@ -304,7 +302,6 @@ html, body {
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
     padding-top: 25px;
-     color: #007bff;
 }
 
 .roleSelector {
@@ -324,8 +321,8 @@ html, body {
 
 .roleSelector select {
     border: 1px solid #b9b8b8cb;
-    border-radius: 1rem;
-    background: linear-gradient(rgb(107, 146, 253), rgb(38, 93, 201));    
+    border-radius: 1rem;  
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
     color: #ffffff;
     height: 45px;
 }
@@ -353,15 +350,12 @@ html, body {
 .userTable thead {
     position: sticky;
     top: 0;
-    /* background: #007bff; */
-    /* background: linear-gradient(rgb(81, 165, 254),#0b7df6); */
-    background: linear-gradient(rgb(107, 146, 253), rgb(38, 93, 201));
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
     color: white;
     z-index: 10;
     display: table;
     width: 100%;
     table-layout: fixed;
-    /* border-radius: 16px; */
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
 }

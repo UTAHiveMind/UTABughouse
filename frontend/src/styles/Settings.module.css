@@ -168,7 +168,7 @@
 
 @media (max-width: 768px) {
   .container {
-  background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+    background: var(--main-background-mobile);
 
   }
 
@@ -207,7 +207,7 @@
     width: 100%;
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
-    color: #007bff;
+    padding-top: 25px;
   }
 
   .currentLogo {
