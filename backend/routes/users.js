@@ -598,6 +598,16 @@ router.get('/tutors/:id/details', async (req, res) => {
         },
       },
 
+      // JOIN attendances for all tutor sessions
+      {
+        $lookup: {
+          from: 'attendances',
+          localField: 'sessions._id',
+          foreignField: 'sessionID',
+          as: 'attendances',
+        },
+      },
+
       // JOIN all students referenced by tutor's sessions
       {
         $lookup: {
@@ -683,27 +693,41 @@ router.get('/tutors/:id/details', async (req, res) => {
               },
               as: 'session',
               in: {
-                _id: '$$session._id',
-                studentID: '$$session.studentID',
-                studentName: {
-                  $let: {
-                    vars: {
-                      matchedStudent: {
-                        $arrayElemAt: [
-                          {
-                            $filter: {
-                              input: '$studentDetails',
-                              as: 'student',
-                              cond: {
-                                $eq: ['$$student._id', '$$session.studentID'],
-                              },
+                $let: {
+                  vars: {
+                    matchedStudent: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: '$studentDetails',
+                            as: 'student',
+                            cond: {
+                              $eq: ['$$student._id', '$$session.studentID'],
                             },
                           },
-                          0,
-                        ],
-                      },
+                        },
+                        0,
+                      ],
                     },
-                    in: {
+                    matchedAttendance: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: '$attendances',
+                            as: 'att',
+                            cond: {
+                              $eq: ['$$att.sessionID', '$$session._id'],
+                            },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                  in: {
+                    _id: '$$session._id',
+                    studentID: '$$session.studentID',
+                    studentName: {
                       $cond: [
                         { $ifNull: ['$$matchedStudent', false] },
                         {
@@ -716,11 +740,31 @@ router.get('/tutors/:id/details', async (req, res) => {
                         'Unknown Student',
                       ],
                     },
+                    studentEmail: {
+                      $ifNull: ['$$matchedStudent.email', ''],
+                    },
+                    sessionTime: '$$session.sessionTime',
+                    duration: '$$session.duration',
+                    status: '$$session.status',
+
+                    // attendance fields
+                    checkInTime: {
+                      $ifNull: ['$$matchedAttendance.checkInTime', null],
+                    },
+                    checkOutTime: {
+                      $ifNull: ['$$matchedAttendance.checkOutTime', null],
+                    },
+                    checkInStatus: {
+                      $ifNull: ['$$matchedAttendance.checkInStatus', 'N/A'],
+                    },
+                    checkOutStatus: {
+                      $ifNull: ['$$matchedAttendance.checkOutStatus', 'N/A'],
+                    },
+                    wasNoShow: {
+                      $ifNull: ['$$matchedAttendance.wasNoShow', false],
+                    },
                   },
                 },
-                sessionTime: '$$session.sessionTime',
-                duration: '$$session.duration',
-                status: '$$session.status',
               },
             },
           },
