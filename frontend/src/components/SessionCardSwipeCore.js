@@ -100,6 +100,14 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false }) {
             nameFromCard ? `Welcome to the BugHouse ${nameFromCard}!` : "Welcome to the BugHouse!"
           );
           setStatusMessage("");
+          
+          // Log the swipe to the backend
+          try {
+            await axiosPostData(`${BACKEND_URL}/api/attendance/public-welcome`, parsed);
+          } catch (err) {
+            console.log("Note: User not found in system, but welcome displayed");
+          }
+          
           scheduleUiReset();
           return;
         }
@@ -110,8 +118,17 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false }) {
             scheduleUiReset();
             return;
           }
+          const studentID = idMatch[1];
           setWelcomeMessage("Welcome to the BugHouse!");
           setStatusMessage("");
+          
+          // Log the swipe to the backend
+          try {
+            await axiosPostData(`${BACKEND_URL}/api/attendance/public-welcome`, { studentID });
+          } catch (err) {
+            console.log("Note: User not found in system, but welcome displayed");
+          }
+          
           scheduleUiReset();
           return;
         }

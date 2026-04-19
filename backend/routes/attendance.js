@@ -5,18 +5,40 @@ const Attendance = require('../models/Attendance');
 const Session = require('../models/Session');
 const User = require('../models/User');
 const TutorProfile = require('../models/TutorProfile');
+const CardSwipeLog = require('../models/CardSwipeLog');
 
 async function findUserForSwipe({ cardID, firstName, lastName, studentID }) {
   let user = null;
-  if (cardID) user = await User.findOne({ cardID });
-  if (!user && studentID) user = await User.findOne({ studentID });
+  console.log("[UserLookup] findUserForSwipe called with:", { cardID, firstName, lastName, studentID });
+  
+  if (cardID) {
+    console.log("[UserLookup] Searching by cardID:", cardID);
+    user = await User.findOne({ cardID });
+    if (user) console.log("[UserLookup] Found user by cardID");
+  }
+  
+  if (!user && studentID) {
+    console.log("[UserLookup] Searching by studentID:", studentID);
+    user = await User.findOne({ studentID });
+    if (user) console.log("[UserLookup] Found user by studentID");
+  }
+  
   if (!user && firstName && lastName) {
+    console.log("[UserLookup] Searching by name:", firstName, lastName);
     user = await User.findOne({
       firstName: new RegExp(`^${firstName}$`, 'i'),
       lastName: new RegExp(`^${lastName}$`, 'i'),
     });
+    if (user) console.log("[UserLookup] Found user by name");
   }
+  
+  if (!user) {
+    console.log("[UserLookup] User not found");
+    return null;
+  }
+  
   if (user && !user.cardID && cardID) {
+    console.log("[UserLookup] Updating user with cardID:", cardID);
     user.cardID = cardID;
     await user.save();
   }
@@ -42,6 +64,46 @@ async function findUserForIdInput(idInput) {
   }
 
   return user;
+}
+
+// Helper function to log card swipes (for any swipe attempt, even if user not found)
+async function logCardSwipeAttempt(swipeData, isWelcomeFlow = false, userFound = null) {
+  try {
+    if (userFound) {
+      console.log("[CardSwipeLog] Logging card swipe for user:", userFound.firstName, userFound.lastName);
+      const cardSwipeLog = new CardSwipeLog({
+        userID: userFound._id,
+        role: userFound.role,
+        firstName: userFound.firstName,
+        lastName: userFound.lastName,
+        cardID: swipeData.cardID || null,
+        studentID: userFound.studentID || null,
+        swipeTime: new Date(),
+        cardFormat: swipeData.cardFormat || 'Track1',
+        isWelcomeFlow
+      });
+      await cardSwipeLog.save();
+      console.log("[CardSwipeLog] Card swipe logged successfully:", cardSwipeLog._id);
+    } else {
+      // Log failed swipe attempts too for audit trail
+      console.log("[CardSwipeLog] Logging failed swipe attempt with data:", swipeData);
+      const cardSwipeLog = new CardSwipeLog({
+        firstName: swipeData.firstName || "UNKNOWN",
+        lastName: swipeData.lastName || "UNKNOWN",
+        cardID: swipeData.cardID || null,
+        studentID: swipeData.studentID || null,
+        swipeTime: new Date(),
+        cardFormat: swipeData.cardFormat || 'Track1',
+        isWelcomeFlow,
+        userID: null,
+        role: "UNKNOWN"
+      });
+      await cardSwipeLog.save();
+      console.log("[CardSwipeLog] Unknown user swipe logged:", cardSwipeLog._id);
+    }
+  } catch (error) {
+    console.error("[CardSwipeLog] Error logging card swipe:", error);
+  }
 }
 
 // Shared attendance check-in/out logic
@@ -249,8 +311,13 @@ router.post('/check', async (req, res) => {
     const user = await findUserForSwipe({ cardID, firstName, lastName, studentID });
 
     if (!user) {
+      // Log the failed attempt (for audit trail)
+      await logCardSwipeAttempt({ cardID, cardFormat: 'Track1', firstName, lastName, studentID }, false, null);
       return res.status(404).json({ success: false, message: "User not found." });
     }
+
+    // Log the card swipe
+    await logCardSwipeAttempt({ cardID, cardFormat: 'Track1' }, false, user);
 
     return await handleAttendanceForUser(user, res);
 
@@ -264,17 +331,31 @@ router.post('/check', async (req, res) => {
 router.post('/public-welcome', async (req, res) => {
   const { idInput, cardID, firstName, lastName, studentID } = req.body;
 
+  console.log("[PublicWelcome] /public-welcome called with:", { idInput, cardID, firstName, lastName, studentID });
+
   try {
     let user = null;
     if (idInput !== undefined && idInput !== null && String(idInput).trim() !== '') {
+      console.log("[PublicWelcome] Looking up user by idInput:", idInput);
       user = await findUserForIdInput(String(idInput).trim());
     } else {
+      console.log("[PublicWelcome] Looking up user by swipe data:", { cardID, firstName, lastName, studentID });
       user = await findUserForSwipe({ cardID, firstName, lastName, studentID });
     }
 
     if (!user) {
+      console.log("[PublicWelcome] User not found in database");
+      // Log the attempt even if user not found (for audit trail)
+      const swipeFormat = cardID ? 'Track1' : (studentID ? 'Track2' : 'Manual');
+      await logCardSwipeAttempt({ cardID: cardID || idInput, cardFormat: swipeFormat, firstName, lastName, studentID }, true, null);
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
+
+    console.log("[PublicWelcome] User found:", user.firstName, user.lastName);
+
+    // Log the card swipe from public welcome
+    const swipeFormat = cardID ? 'Track1' : (studentID ? 'Track2' : 'Manual');
+    await logCardSwipeAttempt({ cardID: cardID || idInput, cardFormat: swipeFormat }, true, user);
 
     const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
     return res.status(200).json({
@@ -284,7 +365,7 @@ router.post('/public-welcome', async (req, res) => {
       displayName: displayName || 'Guest',
     });
   } catch (error) {
-    console.error('Error in public-welcome:', error);
+    console.error('[PublicWelcome] Error in public-welcome:', error);
     return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
@@ -300,14 +381,101 @@ router.post('/manual-checkin', async (req, res) => {
     const user = await findUserForIdInput(String(idInput).trim());
 
     if (!user) {
+      // Log the failed attempt (for audit trail)
+      await logCardSwipeAttempt({ cardID: idInput, cardFormat: 'Manual' }, false, null);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    // Log the manual card swipe
+    await logCardSwipeAttempt({ cardID: idInput, cardFormat: 'Manual' }, false, user);
 
     return await handleAttendanceForUser(user, res);
 
   } catch (error) {
     console.error('Error in manual check-in:', error);
     return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// GET card swipe logs
+router.get('/swipes/all', async (req, res) => {
+  try {
+    const swipeLogs = await CardSwipeLog.find()
+      .sort({ swipeTime: -1 })
+      .limit(100)
+      .populate('userID', 'firstName lastName email');
+    
+    res.json({
+      success: true,
+      count: swipeLogs.length,
+      data: swipeLogs
+    });
+  } catch (error) {
+    console.error("Error fetching card swipe logs:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching card swipe logs',
+      error: error.message
+    });
+  }
+});
+
+// GET card swipe logs for a specific user
+router.get('/swipes/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const swipeLogs = await CardSwipeLog.find({ userID: userId })
+      .sort({ swipeTime: -1 })
+      .limit(100);
+    
+    res.json({
+      success: true,
+      count: swipeLogs.length,
+      data: swipeLogs
+    });
+  } catch (error) {
+    console.error("Error fetching card swipe logs for user:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching card swipe logs',
+      error: error.message
+    });
+  }
+});
+
+// GET card swipe logs within a date range
+router.get('/swipes/range', async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.query;
+
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid date format provided. Please use YYYY-MM-DD.' 
+      });
+    }
+
+    const swipeLogs = await CardSwipeLog.find({
+      swipeTime: { $gte: start, $lte: end }
+    })
+      .sort({ swipeTime: -1 })
+      .populate('userID', 'firstName lastName email');
+    
+    res.json({
+      success: true,
+      count: swipeLogs.length,
+      data: swipeLogs
+    });
+  } catch (error) {
+    console.error("Error fetching card swipe logs:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching card swipe logs',
+      error: error.message
+    });
   }
 });
 
