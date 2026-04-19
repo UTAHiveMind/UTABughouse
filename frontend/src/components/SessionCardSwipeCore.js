@@ -20,7 +20,7 @@ function formatNameFromCardParsed({ firstName, lastName }) {
   return "";
 }
 
-function SessionCardSwipeCore({ instruction, welcomeFlow = false }) {
+function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = null }) {
   const [statusMessage, setStatusMessage] = useState("Awaiting card swipe...");
   const [welcomeMessage, setWelcomeMessage] = useState(null);
   const [sessionDetails, setSessionDetails] = useState(null);
@@ -103,7 +103,7 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false }) {
           
           // Log the swipe to the backend
           try {
-            await axiosPostData(`${BACKEND_URL}/api/attendance/public-welcome`, parsed);
+            await axiosPostData(`${BACKEND_URL}/api/attendance/public-welcome`, { ...parsed, userRole });
           } catch (err) {
             console.log("Note: User not found in system, but welcome displayed");
           }
@@ -124,7 +124,7 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false }) {
           
           // Log the swipe to the backend
           try {
-            await axiosPostData(`${BACKEND_URL}/api/attendance/public-welcome`, { studentID });
+            await axiosPostData(`${BACKEND_URL}/api/attendance/public-welcome`, { studentID, userRole });
           } catch (err) {
             console.log("Note: User not found in system, but welcome displayed");
           }

@@ -12,6 +12,7 @@ function PublicSessionCardSwipe() {
     return <Navigate to="/card-swipe" replace />;
   }
   const instruction = role === "student" ? STUDENT_INSTRUCTION : TUTOR_INSTRUCTION;
+  const capitalizedRole = role === "student" ? "Student" : "Tutor";
 
   return (
     <div className={styles.container}>
@@ -20,7 +21,7 @@ function PublicSessionCardSwipe() {
           ← Card Swipe
         </Link>
         <h1 className={styles.heading}>Swipe Your UTA ID</h1>
-        <SessionCardSwipeCore instruction={instruction} welcomeFlow />
+        <SessionCardSwipeCore instruction={instruction} welcomeFlow userRole={capitalizedRole} />
       </div>
     </div>
   );

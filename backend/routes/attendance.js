@@ -67,7 +67,7 @@ async function findUserForIdInput(idInput) {
 }
 
 // Helper function to log card swipes (for any swipe attempt, even if user not found)
-async function logCardSwipeAttempt(swipeData, isWelcomeFlow = false, userFound = null) {
+async function logCardSwipeAttempt(swipeData, isWelcomeFlow = false, userFound = null, userRole = null) {
   try {
     if (userFound) {
       console.log("[CardSwipeLog] Logging card swipe for user:", userFound.firstName, userFound.lastName);
@@ -96,7 +96,7 @@ async function logCardSwipeAttempt(swipeData, isWelcomeFlow = false, userFound =
         cardFormat: swipeData.cardFormat || 'Track1',
         isWelcomeFlow,
         userID: null,
-        role: "UNKNOWN"
+        role: userRole || "UNKNOWN"
       });
       await cardSwipeLog.save();
       console.log("[CardSwipeLog] Unknown user swipe logged:", cardSwipeLog._id);
@@ -329,9 +329,9 @@ router.post('/check', async (req, res) => {
 
 // Public login-screen card swipe: identify user only (no session / attendance logic)
 router.post('/public-welcome', async (req, res) => {
-  const { idInput, cardID, firstName, lastName, studentID } = req.body;
+  const { idInput, cardID, firstName, lastName, studentID, userRole } = req.body;
 
-  console.log("[PublicWelcome] /public-welcome called with:", { idInput, cardID, firstName, lastName, studentID });
+  console.log("[PublicWelcome] /public-welcome called with:", { idInput, cardID, firstName, lastName, studentID, userRole });
 
   try {
     let user = null;
@@ -347,7 +347,7 @@ router.post('/public-welcome', async (req, res) => {
       console.log("[PublicWelcome] User not found in database");
       // Log the attempt even if user not found (for audit trail)
       const swipeFormat = cardID ? 'Track1' : (studentID ? 'Track2' : 'Manual');
-      await logCardSwipeAttempt({ cardID: cardID || idInput, cardFormat: swipeFormat, firstName, lastName, studentID }, true, null);
+      await logCardSwipeAttempt({ cardID: cardID || idInput, cardFormat: swipeFormat, firstName, lastName, studentID }, true, null, userRole);
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
@@ -355,7 +355,7 @@ router.post('/public-welcome', async (req, res) => {
 
     // Log the card swipe from public welcome
     const swipeFormat = cardID ? 'Track1' : (studentID ? 'Track2' : 'Manual');
-    await logCardSwipeAttempt({ cardID: cardID || idInput, cardFormat: swipeFormat }, true, user);
+    await logCardSwipeAttempt({ cardID: cardID || idInput, cardFormat: swipeFormat }, true, user, userRole);
 
     const displayName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
     return res.status(200).json({
