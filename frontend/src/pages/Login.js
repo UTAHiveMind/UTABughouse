@@ -4,6 +4,7 @@ import styles from "../styles/Login.module.css";
 import { validateLogin } from "../utils/LoginValidation";
 import { axiosPostData, axiosGetData } from "../utils/api";
 import axios from "axios";
+import { FaEnvelope, FaLock } from "react-icons/fa";
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
@@ -140,6 +141,9 @@ function Login() {
           <div className={styles.productName}>bugHouse</div>
         </div>
         <div className={`shadow-lg ${styles.formContainer}`}>
+          <div className={styles.welcomeTitleNav}>
+            <p className={styles.welcomeTitle}>WELCOME BACK!</p>
+          </div>
           <h2 className={styles.title}>Login</h2>
 
           {/* Display success message if redirected from signup */}
@@ -155,35 +159,47 @@ function Login() {
               <label htmlFor="email" className={styles.label}>
                 Email address
               </label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Enter email"
-                className="form-control input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              {errors.email && (
-                <div className={styles.textDanger}>{errors.email}</div>
-              )}
+              
+              <div className={styles.inputGroup}>
+                <span className={styles.inputIcon}>
+                  <FaEnvelope />
+                </span>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter email"
+                  className={`form-control ${styles.input}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                {errors.email && (
+                  <div className={styles.textDanger}>{errors.email}</div>
+                )}
+              </div>
             </div>
             <div className="mb-3">
               <label htmlFor="password" className={styles.label}>
                 Password
               </label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Enter password"
-                className="form-control input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              {errors.password && (
-                <div className={styles.textDanger}>{errors.password}</div>
-              )}
+
+              <div className={styles.inputGroup}>
+                <span className={styles.inputIcon}>
+                  <FaLock />
+                </span>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Enter password"
+                  className={`form-control ${styles.input}`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                {errors.password && (
+                  <div className={styles.textDanger}>{errors.password}</div>
+                )}
+              </div>
             </div>
             <button
               type="submit"
@@ -221,7 +237,7 @@ function Login() {
           </p>
 
           <div className={styles.cardSwipeNav}>
-          <Link to="/card-swipe" className={styles.cardSwipeCornerButton}>
+          <Link to="/card-swipe" className={styles.cardSwipeButton}>
             Card Swipe
           </Link>
           </div>
