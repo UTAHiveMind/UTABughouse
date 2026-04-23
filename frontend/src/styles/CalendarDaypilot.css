@@ -65,9 +65,9 @@ body .month_default_event_inner {
 
 .toolbar-group button.selected,
 .toolbar button.standalone:hover {
-  background-color: #007bff;
+  background-color: #0064B1;
   color: white;
-  border: 1px solid #007bff;
+  border: 1px solid #0064B1;
 }
 
 

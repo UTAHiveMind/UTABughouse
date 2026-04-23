@@ -16,7 +16,7 @@
   transition: margin-left 0.5s ease;
   height: calc(100vh - 90px);
   overflow: auto;
-background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+background: white;
   color: #fff;               /* White text */
   transition: margin-left 0.5s ease;
 }
@@ -36,7 +36,7 @@ background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
   right: 0;
   height: 90px;
   padding: 0 20px;
-  background-color: #0056b3; /* Darker blue */
+  background-color: #0064b1; /* Darker blue */
   z-index: 100;
   color: #fff;
   transition: left 0.5s ease;
@@ -57,7 +57,7 @@ background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
 .formContainer {
   margin-top: 110px; /* below header */
   padding: 20px;
-  background-color: #007bff; /* same blue */
+  background-color: #0064b1; /* same blue */
   border-radius: 8px;
   max-width: 800px;
   width: 100%;

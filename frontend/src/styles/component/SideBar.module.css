@@ -1,11 +1,11 @@
 .sidebar {
   width: 17rem;
   height: 100dvh;
-  background: white;
+  background: linear-gradient(to bottom right, #0064b1, #0064b1);
   position: fixed;
   top: 0;
   left: 0;
-  color: black;
+  color: white;
   display: flex;
   flex-direction: column;
   padding: 20px;
@@ -33,7 +33,7 @@
 .sidebarIcon {
   width: 25px;
   height: 25px;
-  color: #0064B1;
+  color: white;
 }
 
 .iconContainer {
@@ -58,7 +58,7 @@
 .sidebarTitle {
   font-size: 1.8rem;
   margin: 0;
-  color: black;
+  color: white;
   opacity: 1;
   transition: opacity 0.2s ease, transform 0.2s ease;
   transform: translateX(0);
@@ -201,7 +201,7 @@
 
 .aItem {
   text-decoration: none;
-  color: #0064B1;
+  color: white;
   font-size: 18.5px;
   display: flex;
   align-items: center;
@@ -226,8 +226,18 @@
 
 .liStudent:hover,
 .liTutor:hover {
-  background-color: #f2f2f2;
+  background-color: white;
   transition: 0.25s;
+}
+
+.liStudent:hover .aItem,
+.liTutor:hover .aItem {
+  color: #0064B1;
+}
+
+.liStudent:hover .sidebarIcon,
+.liTutor:hover .sidebarIcon {
+  color: #0064B1;
 }
 
 .sidebar h1 {
@@ -274,7 +284,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #0064B1; 
+  color: white; 
   font-size: 0.9rem;
 }
 

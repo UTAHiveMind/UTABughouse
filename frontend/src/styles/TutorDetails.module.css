@@ -8,7 +8,7 @@
   .mainContent {
     flex-grow: 1;
     padding: 2rem;
-    background-color: linear-gradient(135deg, #007bff, #6f42c1);
+    background-color: #0064B1;
     margin-left :290px;/*accounts for sidebar when its minimized*/
     transition: margin-left 0.5s ease;
   }
