@@ -127,9 +127,6 @@ function Login() {
     <div
       className={`d-flex justify-content-center align-items-center vh-100 ${styles.background} ${styles.loginRoot}`}
     >
-      <Link to="/card-swipe" className={styles.cardSwipeCornerButton}>
-        Card Swipe
-      </Link>
       <div className={styles.container}>
         {/* <div className={styles.productName}>bugHouse</div> */}
         <div className={styles.productHeader}>
@@ -196,6 +193,9 @@ function Login() {
               {isLoading ? "Logging in..." : "Login"}
             </button>
           </form>
+          <div className={styles.divider}>
+            <span>OR</span>
+          </div>
 
           {/* SSO Login Button */}
           <button
@@ -219,7 +219,15 @@ function Login() {
               Reset Password
             </Link>
           </p>
+
+          <div className={styles.cardSwipeNav}>
+          <Link to="/card-swipe" className={styles.cardSwipeCornerButton}>
+            Card Swipe
+          </Link>
+          </div>
+
         </div>
+
       </div>
     </div>
   );
