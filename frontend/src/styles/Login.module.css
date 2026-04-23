@@ -4,6 +4,9 @@
   justify-content: center;
   align-items: center;
   min-height: 100dvh;
+  background-position: left top;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .container {

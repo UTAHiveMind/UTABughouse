@@ -5,6 +5,7 @@ import { validateLogin } from "../utils/LoginValidation";
 import { axiosPostData, axiosGetData } from "../utils/api";
 import axios from "axios";
 import { FaEnvelope, FaLock } from "react-icons/fa";
+import bg from "../assets/Login_background.png";
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
@@ -127,6 +128,7 @@ function Login() {
   return (
     <div
       className={`d-flex justify-content-center align-items-center vh-100 ${styles.background} ${styles.loginRoot}`}
+        style={{backgroundImage: `url(${bg})`}}
     >
       <div className={styles.container}>
         {/* <div className={styles.productName}>bugHouse</div> */}
