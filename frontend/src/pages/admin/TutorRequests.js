@@ -10,104 +10,126 @@ const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || "4000";
 const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
 
 const TutorRequests = () => {
-    const [requests, setRequests] = useState([]);
-    const [error, setError] = useState("");
-    const { isCollapsed } = useSidebar();
-    const sidebarWidth = isCollapsed ? "80px" : "270px";
+  const [requests, setRequests] = useState([]);
+  const [error, setError] = useState("");
+  const { isCollapsed } = useSidebar();
 
-    // Populates the tutor request list when initially loading
-    useEffect(() => {
-        getRequests();
-    }, []);
+  useEffect(() => {
+    getRequests();
+  }, []);
 
-    // Sends GET request when student requests
-    const getRequests = async () => {
-        try {
-            const response = await axios.get(`${BACKEND_URL}/api/tutor-request/pending`, 
-                { withCredentials: true }
-            );
-
-            setRequests(response.data);
-
-        } catch (err) {
-            console.error("Error fetching requests:", err);
-            setError("Failed to load requests.");
-        }
-    };
-
-    // Handles Accept or Reject buttons, sends a POST request with decision
-    const handleReview = async (userId, decision) => {
-        try {
-            await axios.post(`${BACKEND_URL}/api/tutor-request/review`, 
-                { userId, decision }, 
-                { withCredentials: true, }
-            );
-
-            // Refresh list of appplicants after decision
-            getRequests();
-
-        } catch (err) {
-            console.error(`Error submitting ${decision}:`, err);
-        }
-    };
-    
-    // https://stackoverflow.com/questions/2805330/opening-pdf-string-in-new-window-with-javascript
-    const viewPDF = (base64Data) => {
+  const getRequests = async () => {
     try {
-        const base64String = base64Data.split(';base64,')[1]; // Removes "data:application/pdf;base64," and leaves the encoded data
-        const byteCharacters = atob(base64String); // ASCII to binary
-        const byteNumbers = new Array(byteCharacters.length);
+      const response = await axios.get(`${BACKEND_URL}/api/tutor-request/pending`, {
+        withCredentials: true,
+      });
 
-        for (var i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-
-        const byteArray = new Uint8Array(byteNumbers);
-        const file = new Blob([byteArray], { type: 'application/pdf' });
-
-        const fileURL = URL.createObjectURL(file); // Generates a temporary URL
-        window.open(fileURL, '_blank');
+      setRequests(response.data);
     } catch (err) {
-        console.error("Failed to open PDF:", err);
+      console.error("Error fetching requests:", err);
+      setError("Failed to load requests.");
     }
-};
+  };
 
-return (
+  const handleReview = async (userId, decision) => {
+    try {
+      await axios.post(
+        `${BACKEND_URL}/api/tutor-request/review`,
+        { userId, decision },
+        { withCredentials: true }
+      );
+
+      getRequests();
+    } catch (err) {
+      console.error(`Error submitting ${decision}:`, err);
+    }
+  };
+
+  const viewPDF = (base64Data) => {
+    try {
+      const base64String = base64Data.split(";base64,")[1];
+      const byteCharacters = atob(base64String);
+      const byteNumbers = new Array(byteCharacters.length);
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      const file = new Blob([byteArray], { type: "application/pdf" });
+      const fileURL = URL.createObjectURL(file);
+
+      window.open(fileURL, "_blank");
+    } catch (err) {
+      console.error("Failed to open PDF:", err);
+    }
+  };
+
+  return (
     <div className={styles.container}>
       <AdminSidebar selected="tutor-requests" />
+
       <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
-        <h1>Incoming Tutor Requests</h1>
+        <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+          <h1 className={styles.heading}>Incoming Tutor Requests</h1>
+        </div>
+
         {error && <p className={styles.error}>{error}</p>}
 
-        {requests.length === 0 ? (
-          <p>No pending requests.</p>
-        ) : (
-          <ul className={styles.requestList}>
-            
-            {/* Creates the list of "bubbles" (cards) for each request */}
+        <table className={styles.requestTable}>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Student ID</th>
+              <th>Resume</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
 
-            {requests.map((req) => (
-              <li key={req._id} className={styles.requestItem}>
-                <p><strong>Name:</strong> {req.name}</p>
-                <p><strong>Student ID:</strong> {req.studentID}</p>
-                {req.resume && (
-                    <p>
-                        <button
-                            onClick={() => viewPDF(req.resume)}
-                            style={{ color: "blue", textDecoration: "underline", background: "none", border: "none", padding: 0}}
-                        >
-                            View Resume
-                        </button>
-                    </p>
+          <tbody>
+            {requests.length === 0 ? (
+              <tr>
+                <td colSpan="4">No pending requests.</td>
+              </tr>
+            ) : (
+              requests.map((req) => (
+                <tr key={req._id}>
+                  <td>{req.name}</td>
+                  <td>{req.studentID}</td>
+
+                  <td>
+                    {req.resume ? (
+                      <button
+                        className={styles.linkButton}
+                        onClick={() => viewPDF(req.resume)}
+                      >
+                        View Resume
+                      </button>
+                    ) : (
+                      "No resume"
                     )}
-                <div className={styles.buttonGroup}>
-                  <button onClick={() => handleReview(req.userId._id, "approved")}>Approve</button> 
-                  <button onClick={() => handleReview(req.userId._id, "rejected")}>Reject</button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                  </td>
+
+                  <td>
+                    <button
+                      className={styles.approveButton}
+                      onClick={() => handleReview(req.userId._id, "approved")}
+                    >
+                      Approve
+                    </button>
+
+                    <button
+                      className={styles.rejectButton}
+                      onClick={() => handleReview(req.userId._id, "rejected")}
+                    >
+                      Reject
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

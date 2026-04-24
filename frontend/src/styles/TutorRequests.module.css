@@ -1,115 +1,196 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  font-family: sans-serif;
+  background: white;
+}
+
+.container {
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
 .mainContent {
-    margin-top: 90px;
-    margin-left: 260px; /* Accounts for sidebar when its minimized */
-    padding: 20px;
-    overflow-y: auto; /* Allows scrolling if content gets too long */
-    min-height: 100vh;
-    transition: margin-left 0.5s ease;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  margin-top: 90px;
+  color: #212529;
+  overflow: visible;
+  margin-left: 260px;
+  width: 100%;
+  transition: margin-left 0.5s ease;
 }
 
 .mainContentCollapsed {
-    margin-left: 80px;
+  margin-left: 80px;
 }
 
-.mainContent h1{
-    color: white;
-    padding-bottom: 20px;
-    
+.headerSection {
+  display: flex;
+  gap: 15px;
+  background: #0064B1;
+  padding: 15px 25px;
+  position: fixed;
+  top: 0;
+  left: 270px;
+  right: 15px;
+  border-bottom: #ddd;
+  max-width: 100vw;
+  transition: left 0.5s ease;
+  width: calc(100%);
+  z-index: 10;
 }
 
-/* Removes bullet point and indention from it */
-.requestList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+.headerSectionCollapsed {
+  left: 80px;
 }
 
-.requestItem {
-    background: white;
-    padding: 20px; /* Internal space inside the card */
-    border-radius: 12px; /* Rounds corners */
-    margin-bottom: 20px;
+.heading {
+  font-size: 2rem;
+  color: white;
+  font-weight: bold;
+  margin: 0;
+  white-space: nowrap;
 }
 
-.buttonGroup {
-    display: flex; /* Sits buttons side-by-side */
-    gap: 10px;
-    margin-top: 10px;
+.error {
+  color: red;
+  margin-bottom: 15px;
 }
 
-
-.buttonGroup button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s;
+/* Same table style as Admin Reviews / Course Manager */
+.requestTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  table-layout: fixed;
+  position: relative;
+  top: 15px;
 }
 
-/* Accept Button */
-.buttonGroup button:first-child {
-    background-color: #28a745;
-    color: white;
+.requestTable thead {
+  position: sticky;
+  top: 0;
+  background: #0064B1;
+  color: white;
+  z-index: 10;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
 }
 
-.buttonGroup button:first-child:hover {
-    background-color: #218838;
+.requestTable th:first-child,
+.requestTable td:first-child {
+  padding-left: 10px;
 }
 
-
-/* Reject Button */
-.buttonGroup button:last-child {
-    background-color: #dc3545;
-    color: white;
+.requestTable thead th {
+  padding: 12px;
+  font-weight: bold;
+  text-align: left;
 }
 
-.buttonGroup button:last-child:hover {
-    background-color: #c82333;
+.requestTable tbody {
+  display: block;
+  width: 100%;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
 }
 
+.requestTable tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
 
+.requestTable td {
+  padding: 12px;
+  word-wrap: break-word;
+}
 
+.requestTable tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
 
+.requestTable thead tr:hover {
+  background: #0064B1 !important;
+}
 
+.requestTable tr:hover {
+  background-color: #dbe9ff;
+}
 
+.linkButton {
+  color: #0064B1;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: bold;
+}
 
+.approveButton {
+  padding: 6px 12px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-right: 8px;
+}
 
+.approveButton:hover {
+  background-color: #218838;
+}
+
+.rejectButton {
+  padding: 6px 12px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.rejectButton:hover {
+  background-color: #c82333;
+}
 
 @media (max-width: 768px) {
   .container {
     background: var(--main-background-mobile);
-
+    overflow-y: auto;
   }
 
-  body {
-    background: var(--main-background-mobile);
-  }
   .mainContent {
-      margin-left: 0;
+    margin-left: 0;
+    padding-bottom: 90px;
+    overflow-y: auto;
   }
 
-  .mainContent, .mainContentCollapsed {
-      margin-left: 0;
-  }
-
-  .mainContent h1 {
-    color: var(--main-title-color-mobile);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 100%;
-    align-items: center;
+  .mainContent,
+  .mainContentCollapsed {
+    margin-left: 0;
   }
 
   .headerSection {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      background: transparent;
-      border-bottom: none;
-      left: 0;
-        background: var(--main-background-mobile);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--main-background-mobile);
+    border-bottom: none;
+    left: 0;
+    width: calc(100%);
   }
 
   .heading {
@@ -119,17 +200,15 @@
     align-items: center;
     font-size: 2rem;
     margin: 0;
-    padding-bottom: 20px;
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
     padding-top: 25px;
-    
   }
 
-  .courseTable thead {
+  .requestTable thead {
     position: sticky;
     top: 0;
-    background: linear-gradient(rgb(107, 146, 253), rgb(38, 93, 201));
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
     color: white;
     z-index: 10;
     display: table;
@@ -137,5 +216,9 @@
     table-layout: fixed;
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
-}
+  }
+
+  .requestTable tbody {
+    max-height: calc(100vh - 340px);
+  }
 }
