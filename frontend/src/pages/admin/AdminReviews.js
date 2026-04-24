@@ -1,104 +1,127 @@
-import React, { useEffect, useState } from 'react';
-import AdminSidebar from '../../components/Sidebar/AdminSidebar';
-import styles from '../../styles/Feedback.module.css';
+import React, { useEffect, useState } from "react";
+import AdminSidebar from "../../components/Sidebar/AdminSidebar";
+import styles from "../../styles/Feedback.module.css";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
 
 const AdminReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [selectedReview, setSelectedReview] = useState(null);
   const { isCollapsed } = useSidebar();
-  const sidebarWidth = isCollapsed ? "80px" : "270px";
 
   useEffect(() => {
-    fetch('/api/feedback')
+    fetch("/api/feedback")
       .then((res) => res.json())
       .then((data) => setReviews(data))
       .catch(console.error);
   }, []);
 
   return (
-    <div className="admin-layout" style={{ display: 'flex' }}>
+    <div className={styles.container}>
       <AdminSidebar selected="admin-reviews" />
-      <main className={`${styles.reviewsBackground} ${isCollapsed ? styles.reviewsBackgroundCollapsed : ""}`}>
-        {/* Left Review List */}
-        <div className={styles.reviewsContainer}>
-          <h1 className={styles.reviewsTitle}>Tutor Reviews</h1>
-          {reviews.length === 0 ? (
-            <p>No reviews found.</p>
-          ) : (
-            reviews.map((review) => (
-              <div
-                key={review._id}
-                className={styles.reviewCard}
-                onClick={() => setSelectedReview(review)}
-                style={{ cursor: 'pointer' }}
-              >
-                <p>
-                  <span className={styles.reviewLabel}>Tutor: </span>
-                  {review.tutorUniqueId
-                    ? `${review.tutorUniqueId.firstName || ''} ${review.tutorUniqueId.lastName || ''}`.trim()
-                    : 'Unknown'}
-                </p>
-                <p>
-                  <span className={styles.reviewLabel}>Student: </span>
-                  {review.studentUniqueId
-                    ? `${review.studentUniqueId.firstName || ''} ${review.studentUniqueId.lastName || ''}`.trim()
-                    : 'Unknown'}
-                </p>
-                <p>
-                  <span className={styles.reviewLabel}>Rating: </span>
-                  <span className={styles.starsDisplay}>
-                    {'★'.repeat(review.rating) + '☆'.repeat(5 - review.rating)}
-                  </span>
-                </p>
-                <p>
-                  <span className={styles.reviewLabel}>Feedback: </span>
-                  <span className={styles.reviewText}>{review.feedbackText}</span>
-                </p>
-                <p className={styles.reviewDate}>
-                  Submitted on: {new Date(review.createdAt).toLocaleString()}
-                </p>
-              </div>
-            ))
-          )}
+
+      <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
+        <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+          <h1 className={styles.heading}>Tutor Reviews</h1>
         </div>
 
-        {/* Right Expanded Review Panel */}
+        <table className={styles.reviewTable}>
+          <thead>
+            <tr>
+              <th>Tutor</th>
+              <th>Student</th>
+              <th>Rating</th>
+              <th>Feedback</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {reviews.length === 0 ? (
+              <tr>
+                <td colSpan="5">No reviews found.</td>
+              </tr>
+            ) : (
+              reviews.map((review) => (
+                <tr
+                  key={review._id}
+                  onClick={() => setSelectedReview(review)}
+                >
+                  <td>
+                    {review.tutorUniqueId
+                      ? `${review.tutorUniqueId.firstName || ""} ${review.tutorUniqueId.lastName || ""}`.trim()
+                      : "Unknown"}
+                  </td>
+
+                  <td>
+                    {review.studentUniqueId
+                      ? `${review.studentUniqueId.firstName || ""} ${review.studentUniqueId.lastName || ""}`.trim()
+                      : "Unknown"}
+                  </td>
+
+                  <td>
+                    <span className={styles.starsDisplay}>
+                      {"★".repeat(review.rating) + "☆".repeat(5 - review.rating)}
+                    </span>
+                  </td>
+
+                  <td className={styles.feedbackCell}>
+                    {review.feedbackText}
+                  </td>
+
+                  <td>
+                    {new Date(review.createdAt).toLocaleString()}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
         {selectedReview && (
           <div className={styles.detailCard}>
             <h2>Review Details</h2>
+
             <p>
-              <strong>Tutor:</strong>{' '}
+              <strong>Tutor:</strong>{" "}
               {selectedReview.tutorUniqueId
-                ? `${selectedReview.tutorUniqueId.firstName || ''} ${selectedReview.tutorUniqueId.lastName || ''}`.trim()
-                : 'Unknown'}
+                ? `${selectedReview.tutorUniqueId.firstName || ""} ${selectedReview.tutorUniqueId.lastName || ""}`.trim()
+                : "Unknown"}
             </p>
+
             <p>
-              <strong>Student:</strong>{' '}
+              <strong>Student:</strong>{" "}
               {selectedReview.studentUniqueId
-                ? `${selectedReview.studentUniqueId.firstName || ''} ${selectedReview.studentUniqueId.lastName || ''}`.trim()
-                : 'Unknown'}
+                ? `${selectedReview.studentUniqueId.firstName || ""} ${selectedReview.studentUniqueId.lastName || ""}`.trim()
+                : "Unknown"}
             </p>
+
             <p>
-              <strong>Rating:</strong>{' '}
+              <strong>Rating:</strong>{" "}
               <span className={styles.starsDisplay}>
-                {'★'.repeat(selectedReview.rating) + '☆'.repeat(5 - selectedReview.rating)}
+                {"★".repeat(selectedReview.rating) + "☆".repeat(5 - selectedReview.rating)}
               </span>
             </p>
+
             <p>
-              <strong>Feedback:</strong><br />
+              <strong>Feedback:</strong>
+              <br />
               {selectedReview.feedbackText}
             </p>
+
             <p>
-              <strong>Submitted on:</strong>{' '}
+              <strong>Submitted on:</strong>{" "}
               {new Date(selectedReview.createdAt).toLocaleString()}
             </p>
-            <button onClick={() => setSelectedReview(null)} style={{ marginTop: '15px' }} className={styles.closeButton}>
+
+            <button
+              onClick={() => setSelectedReview(null)}
+              className={styles.actionButton}
+            >
               Close
             </button>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 };

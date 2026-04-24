@@ -1,369 +1,217 @@
-/* Overall background styling */
-.background {
-  background-color: #f5f5f5;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh; 
-  padding: 20px;
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  font-family: sans-serif;
+  background: white;
 }
 
 .container {
   display: flex;
-  min-height: 100vh; 
-  flex-direction: column;
-  align-items: center; 
+  min-height: 100vh;
+  overflow: hidden;
 }
 
 .mainContent {
-  background: #ffffff;
-  border-radius: 10px; 
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-  padding: 30px;
-  max-width: 500px;
-  width: 100%;
-  text-align: center;
-  margin-left :100px;
-
-  /* Center positioning */
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  /* Flexbox centering for horizontal aligment */
-  margin: 0 auto;
-}
-
-/* Title styling */
-.title {
-  font-size: 1.8rem;
-  color: #333333;
-  margin-bottom: 20px;
-  font-weight: bold;
-}
-
-/* Label styling */
-.label {
-  display: block;
-  font-size: 1rem;
-  color: #555555;
-  margin-bottom: 5px;
-  text-align: left;
-}
-
-/* Select dropdown styling */
-.select {
-  width: 100%;
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid #cccccc;
-  border-radius: 5px;
-  margin-bottom: 15px;
-  background-color: #f9f9f9;
-  color: #333333;
-}
-
-/* Textarea styling */
-.textarea {
-  width: 100%;
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid #cccccc;
-  border-radius: 5px;
-  height: 100px;
-  margin-bottom: 15px;
-  background-color: #f9f9f9;
-  color: #333333;
-  resize: none;
-}
-
-/* Star rating container */
-.stars {
+  flex: 1;
   display: flex;
-  justify-content: center;
-  margin-bottom: 15px;
-}
-
-/* Individual star styling */
-.star {
-  font-size: 2rem;
-  color: #cccccc; 
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.starSelected {
-  color: #ffd700; 
-}
-
-/* Button styling */
-.submitButton {
-  background-color: #007bff;
-  color: #ffffff;
-  font-size: 1rem;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  width: 100%;
-  margin-top: 10px;
-  transition: background-color 0.3s ease;
-}
-
-.submitButton:hover {
-  background-color: #0056b3;
-}
-
-/* Error message styling */
-.textDanger {
-  color: #ff4d4d;
-  font-size: 0.9rem;
-  margin-top: 5px;
-  text-align: left;
-}
-
-/* Success message styling */
-.successMessage {
-  color: green;
-  font-size: 1.2em;
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-/* Success message styling */
-.text-success {
-  color: #28a745;
-  font-size: 1rem;
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-/* Background for the whole reviews page */
-.reviewsBackground {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 40px 20px;
-  gap: 40px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  padding: 20px;
+  margin-top: 90px;
+  color: #212529;
+  overflow: visible;
   margin-left: 260px;
+  width: 100%;
   transition: margin-left 0.5s ease;
-
 }
 
-.reviewsBackgroundCollapsed {
+.mainContentCollapsed {
   margin-left: 80px;
 }
 
-
-/* Container for the reviews content */
-.reviewsContainer {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  padding: 30px;
-  max-width: 900px;
-  margin-left :200px;
-  width: 200%;
+.headerSection {
+  display: flex;
+  gap: 15px;
+  background: #0064B1;
+  padding: 15px 25px;
+  position: fixed;
+  top: 0;
+  left: 270px;
+  right: 15px;
+  border-bottom: #ddd;
+  max-width: 100vw;
+  transition: left 0.5s ease;
+  width: calc(100%);
+  z-index: 10;
 }
 
-/* Title style */
-.reviewsTitle {
+.headerSectionCollapsed {
+  left: 80px;
+}
+
+.heading {
   font-size: 2rem;
+  color: white;
   font-weight: bold;
-  color: #333333;
-  margin-bottom: 30px;
-  text-align: center;
+  margin: 0;
+  white-space: nowrap;
 }
 
-/* Each review card */
-.reviewCard {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  background-color: #fafafa;
+/* Table */
+.reviewTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  table-layout: fixed;
+  position: relative;
+  top: 15px;
 }
 
-/* Review field label */
-.reviewLabel {
-  font-weight: 600;
-  color: #555555;
+.reviewTable thead {
+  position: sticky;
+  top: 0;
+  background: #0064B1;
+  color: white;
+  z-index: 10;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
 }
 
-/* Review text */
-.reviewText {
-  margin: 5px 0 15px 0;
-  color: #444444;
+.reviewTable th:first-child,
+.reviewTable td:first-child {
+  padding-left: 10px;
 }
 
-/* Date styling */
-.reviewDate {
-  font-size: 0.85rem;
-  color: #888888;
-  text-align: right;
+.reviewTable thead th {
+  padding: 12px;
+  font-weight: bold;
+  text-align: left;
+}
+
+.reviewTable tbody {
+  display: block;
+  width: 100%;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
+}
+
+.reviewTable tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  cursor: pointer;
+}
+
+.reviewTable td {
+  padding: 12px;
+  word-wrap: break-word;
+}
+
+.reviewTable tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.reviewTable thead tr:hover {
+  background: #0064B1 !important;
+}
+
+.reviewTable tr:hover {
+  background-color: #dbe9ff;
+}
+
+.feedbackCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .starsDisplay {
   color: #ffd700;
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-  letter-spacing: 2px;
-}
-
-.reviewCard:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-  transition: all 0.3s ease;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
 }
 
 .detailCard {
-  flex: 0 0 40%;
-  margin-left: 20px;
+  margin-top: 35px;
+  background: white;
   padding: 20px;
-  background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-  animation: slideIn 0.3s ease forwards;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.actionButton {
+  padding: 6px 12px;
+  background-color: #0064B1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-right: 8px;
 }
 
-.reviewsContainer {
-  flex: 1;
-  max-width: 60%;
-  overflow-y: auto;
+.actionButton:hover {
+  background-color: #0056b3;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 @media (max-width: 768px) {
   .container {
     background: var(--main-background-mobile);
-  }
-
-  .reviewsBackground {
-    display: flex;
-    flex-direction: column;
-    margin-left: 0;
-    width: 100%;
-    padding: 10px;
-    height: 100vh;
-    padding-bottom: 100px;
-  }
-
-  .reviewsContainer {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  padding: 10px;
-  max-width: 100%;
-  margin-left :0px;
-  }
-
-  .detailCard {
-    width: 100%;
-    padding: 10px;
-    margin-left: 0;
-  }
-
-  .mainContent, .profileContainer {
-    margin-left: 0;
-    /* display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center; */
-    width: 100%;
-    height: 100vh;
-    /* padding: 0px 0px; */
+    overflow-y: auto;
   }
 
   .mainContent {
-    /* padding: 0px 0px; */
+    margin-left: 0;
+    padding-bottom: 90px;
+    overflow-y: auto;
   }
 
-    .heading {
-    /* color: black; */
+  .mainContent,
+  .mainContentCollapsed {
+    margin-left: 0;
+  }
+
+  .headerSection {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    align-items: center;
-    vertical-align: center;
+    background: var(--main-background-mobile);
+    border-bottom: none;
+    left: 0;
+    width: calc(100%);
+  }
+
+  .heading {
+    display: flex;
+    flex-direction: column;
     width: 100%;
+    align-items: center;
+    font-size: 2rem;
+    margin: 0;
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
+    padding-top: 25px;
   }
 
-  .currentLogo {
-    padding: 0px 0px;
-  }
-
-  .adminSettings {
-    width: 100%;
-    padding: 0px 0px;
-  }
-
-  .settingsSection {
-    padding: 0.5px 0.5px;
-    border: none;
-  }
-
-  .formGroup {
-    margin-bottom: 0;
-  }
-
-  .submitButton {
-    background-color: #36b2ff;
-    padding: 5px 0px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    border-radius: 12px;
-    border: .5px outset rgba(230, 225, 225, 0.388);
-    box-shadow: inset 0px 0px 2px #87CEFA, 
-        inset -1px 2px 10px rgb(255, 255, 255),
-        inset 0 0 15px white,
-        inset 5px 0px 2px #ffffffd9,
-        1px 8px 15px rgba(128, 128, 128, 0.416);
-  }
-
-  .closeButton {
+  .reviewTable thead {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
     color: white;
-    background-color: #36b2ff;
-    padding: 5px 0px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    z-index: 10;
+    display: table;
     width: 100%;
-    border-radius: 12px;
-    border: .5px outset rgba(230, 225, 225, 0.388);
-    box-shadow: inset 0px 0px 2px #87CEFA, 
-        inset -1px 2px 10px rgb(255, 255, 255),
-        inset 0 0 15px white,
-        inset 5px 0px 2px #ffffffd9,
-        1px 8px 15px rgba(128, 128, 128, 0.416);
+    table-layout: fixed;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+
+  .reviewTable tbody {
+    max-height: calc(100vh - 340px);
   }
 }
-
