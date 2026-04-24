@@ -279,6 +279,7 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false }) {
               }}
               disabled={isLoading}
               style={{ marginTop: "20px" }}
+              className={styles.manualCheckInButton}
             >
               Manual Check-In
             </button>
@@ -298,7 +299,7 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false }) {
                   width: "200px",
                 }}
               />
-              <button type="button" onClick={handleManualCheckIn} disabled={isLoading || !manualID.trim()}>
+              <button type="button" className={styles.submitButton} onClick={handleManualCheckIn} disabled={isLoading || !manualID.trim()}>
                 Submit
               </button>
               <button
@@ -313,6 +314,7 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false }) {
                 }}
                 disabled={isLoading}
                 style={{ marginLeft: "10px" }}
+                className={styles.cancelButton}
               >
                 Cancel
               </button>

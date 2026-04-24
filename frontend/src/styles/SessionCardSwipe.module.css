@@ -1,8 +1,10 @@
 .container {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #007bff, #6f42c1);
   position: relative;
+  background-position: left top;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .mainContent {
@@ -35,6 +37,45 @@
   margin-bottom: 1rem;
   opacity: 0.95;
 }
+
+.manualCheckInButton {
+  background: linear-gradient(135deg, #1E63C6, #004A99);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.699);
+  width: auto;
+  min-width: 130px;
+  padding: 10px 18px;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  text-align: center;
+  border: 0.5px solid rgba(128, 128, 128, 0.234);
+}
+
+.submitButton, .cancelButton {
+  background: linear-gradient(135deg, #1E63C6, #004A99);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.699);
+    padding: 10px 18px;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  text-align: center;
+  width: auto;
+  border: 0.5px solid rgba(128, 128, 128, 0.234);
+}
+
+.manualCheckInButton:disabled,
+.submitButton:disabled,
+.cancelButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  background: #9ca3af;
+}
+
+.manualCheckInButton:hover , .submitButton:hover , .cancelButton:hover {
+    background: linear-gradient(135deg, #2F7DE1, #0056B3);
+  box-shadow: 0 2px 7px rgba(121, 121, 121, 0.699);
+} 
 
 .publicBackLink:hover {
   text-decoration: underline;
