@@ -3,6 +3,9 @@
   min-height: 100vh;
   background: white;
   position: relative;
+  background-position: left top;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .mainContent {
@@ -35,6 +38,45 @@
   margin-bottom: 1rem;
   opacity: 0.95;
 }
+
+.manualCheckInButton {
+  background: linear-gradient(135deg, #1E63C6, #004A99);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.699);
+  width: auto;
+  min-width: 130px;
+  padding: 10px 18px;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  text-align: center;
+  border: 0.5px solid rgba(128, 128, 128, 0.234);
+}
+
+.submitButton, .cancelButton {
+  background: linear-gradient(135deg, #1E63C6, #004A99);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.699);
+    padding: 10px 18px;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  text-align: center;
+  width: auto;
+  border: 0.5px solid rgba(128, 128, 128, 0.234);
+}
+
+.manualCheckInButton:disabled,
+.submitButton:disabled,
+.cancelButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  background: #9ca3af;
+}
+
+.manualCheckInButton:hover , .submitButton:hover , .cancelButton:hover {
+    background: linear-gradient(135deg, #2F7DE1, #0056B3);
+  box-shadow: 0 2px 7px rgba(121, 121, 121, 0.699);
+} 
 
 .publicBackLink:hover {
   text-decoration: underline;
@@ -245,8 +287,62 @@
   }
 
   .cardReaderBox {
-    background: linear-gradient(rgb(236, 241, 255), rgb(77, 128, 228));
+    background: linear-gradient(rgb(236, 241, 255), rgb(255, 255, 255));
   }
+
+  .inputIDNav {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 25px;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .inputIDNav input {
+    min-width: 100%;
+    border: 0.5px solid rgba(128, 128, 128, 0.572);
+    border-radius: 8px;
+
+  }
+
+.publicBackLink {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 100;
+
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  background-color: #3498dbaa !important;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.82rem !important;
+
+  border: 0.5px outset rgba(230, 225, 225, 0.388);
+  box-shadow:
+    inset 0px 0px 2px #87CEFA,
+    inset -1px 2px 10px rgb(255, 255, 255),
+    inset 0 0 15px white,
+    inset 5px 0px 2px #ffffffd9,
+    0px 4px 10px rgba(128, 128, 128, 0.416);
+
+  font-size: 0 !important;
+}
+
+.publicBackLink::before {
+  content: "←";
+  font-size: 20px;
+  color: #fff;
+}
 
 }
 

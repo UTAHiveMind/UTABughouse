@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { axiosPostData } from "../utils/api";
 import styles from "../styles/ForgotPassword.module.css";
 import logoImg from "../logo.svg";
+import bg from "../assets/background.png";
+import { FaEnvelope } from "react-icons/fa";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -23,7 +25,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className={styles.background}>
+    <div className={styles.background} style={{backgroundImage: `url(${bg})`}}>
       <div className={styles.container}>
         <div className={styles.productHeader}>
           <img src={logoImg} alt="Logo" className={styles.productLogo} />
@@ -34,6 +36,10 @@ const ForgotPassword = () => {
         <form onSubmit={handleSubmit} className="mt-3">
           <div className="mb-3">
             <label htmlFor="email" className={styles.label}>Email address</label>
+            <div className={styles.inputGroup}>
+              <span className={styles.inputIcon}>
+                <FaEnvelope />
+              </span>
             <input
               type="email"
               id="email"
@@ -42,6 +48,7 @@ const ForgotPassword = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+            </div>
           </div>
           <button
             type="submit"

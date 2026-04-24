@@ -296,12 +296,14 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
               }}
               disabled={isLoading}
               style={{ marginTop: "20px" }}
+              className={styles.manualCheckInButton}
             >
               Manual Check-In
             </button>
           ) : (
-            <div style={{ marginTop: "20px" }}>
-              <input
+            <div className={styles.inputIDNav} style={{ marginTop: "20px" }}>
+              <div>
+                              <input
                 ref={manualInputRef}
                 type="text"
                 placeholder="Enter your ID number"
@@ -315,24 +317,29 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
                   width: "200px",
                 }}
               />
-              <button type="button" onClick={handleManualCheckIn} disabled={isLoading || !manualID.trim()}>
-                Submit
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowManualInput(false);
-                  setManualID("");
-                  setStatusMessage("Awaiting card swipe...");
-                  setSessionDetails(null);
-                  setWelcomeMessage(null);
-                  if (inputRef.current) inputRef.current.focus();
-                }}
-                disabled={isLoading}
-                style={{ marginLeft: "10px" }}
-              >
-                Cancel
-              </button>
+              </div>
+              <div>
+                <button type="button" className={styles.submitButton} onClick={handleManualCheckIn} disabled={isLoading || !manualID.trim()}>
+                  Submit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowManualInput(false);
+                    setManualID("");
+                    setStatusMessage("Awaiting card swipe...");
+                    setSessionDetails(null);
+                    setWelcomeMessage(null);
+                    if (inputRef.current) inputRef.current.focus();
+                  }}
+                  disabled={isLoading}
+                  style={{ marginLeft: "10px" }}
+                  className={styles.cancelButton}
+                >
+                  Cancel
+                </button>
+              </div>
+
             </div>
           )}
 

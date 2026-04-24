@@ -5,6 +5,9 @@
   justify-content: center;
   background: linear-gradient(135deg, #007bff, #6f42c1);
   padding: 1rem;
+  background-position: left top;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 .panel {
@@ -34,7 +37,8 @@
 .choiceButton {
   flex: 1;
   min-width: 120px;
-  background-color: #007bff;
+  background: linear-gradient(135deg, #1E63C6, #004A99);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.699);
   color: #fff;
   padding: 12px 20px;
   font-size: 16px;
@@ -44,7 +48,8 @@
 }
 
 .choiceButton:hover {
-  background-color: #3399ff;
+  background: linear-gradient(135deg, #2F7DE1, #0056B3);
+  box-shadow: 0 2px 7px rgba(121, 121, 121, 0.699);
 }
 
 .backLink {
@@ -57,4 +62,23 @@
 
 .backLink:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .page {
+    min-height: 100dvh;
+    align-items: flex-end;
+    padding: 0;
+  }
+  
+  .panel {
+    max-width: none;
+    width: 100%;
+    min-width: 430px;
+    min-height: 85dvh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 32px 32px 0 0;
+    padding: 2rem 1.5rem;
+  }
 }
