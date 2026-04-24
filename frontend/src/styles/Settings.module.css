@@ -1,97 +1,91 @@
-
-.headerSection {
-  position: fixed;
-  top: 0;
-  height: 80px;
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  font-family: sans-serif;
   background: white;
-  padding: 15px 25px;
-  border-bottom: 1px solid #ddd;
+}
+
+.container {
   display: flex;
-  align-items: center;
-  z-index: 1000;
-  margin-left: -10px;
-  width: calc(100% - 270px);
-  left: 270px;
-  transition: left 0.5s ease, width 0.5s ease;
+  min-height: 100vh;
+  overflow: hidden;
 }
-
-.headerSectionCollapsed {
-  width: calc(100% - 90px);
-  left: 90px;
-}
-
-
 
 .mainContent {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 20px;
-  color: black;
-  margin-left: 270px;
-  padding-top: 100px;
+  margin-top: 90px;
+  color: #212529;
+  overflow: visible;
+  margin-left: 260px;
   width: 100%;
   transition: margin-left 0.5s ease;
-  
 }
 
 .mainContentCollapsed {
   margin-left: 80px;
 }
 
+.headerSection {
+  display: flex;
+  gap: 15px;
+  background: #0064B1;
+  padding: 15px 25px;
+  position: fixed;
+  top: 0;
+  left: 270px;
+  right: 15px;
+  border-bottom: #ddd;
+  max-width: 100vw;
+  transition: left 0.5s ease;
+  width: calc(100%);
+  z-index: 10;
+}
 
+.headerSectionCollapsed {
+  left: 80px;
+}
 
 .heading {
   font-size: 2rem;
-  color: #007bff;
+  color: white;
   font-weight: bold;
   margin: 0;
   white-space: nowrap;
 }
 
-.adminSettings {
-  background-color: white;
-  padding: 2rem;
+.adminCard {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
   max-width: 900px;
-  margin: 0 auto;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.settingsSection {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background-color: #f9f9f9;
+.sectionCard {
+  background: #f9f9f9;
+  padding: 20px;
   border-radius: 12px;
   border: 1px solid #ddd;
-  align-items: flex-start;
+  margin-bottom: 20px;
 }
 
-.toggleSection {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start; 
-  background-color: #f9f9f9;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  padding: 1.5rem;
-  gap: 10px;
-  margin-bottom: 2rem;
-}
-
-.toggleSection h3 {
+.sectionCard h3 {
   font-size: 1.25rem;
   color: #333;
-  margin-bottom: 1rem;
-}
-
-.settingsSection h3 {
-  font-size: 1.25rem;
-  color: #333;
-  margin-bottom: 1rem;
+  margin-top: 0;
+  margin-bottom: 15px;
 }
 
 .currentLogo {
-  margin: 1rem 0;
-  padding: 1.25rem;
+  margin: 15px 0;
+  padding: 20px;
   border: 2px dashed #ccc;
   display: flex;
   justify-content: center;
@@ -99,9 +93,19 @@
   border-radius: 10px;
 }
 
+.logoImage {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+}
+
+.formGroup {
+  margin-bottom: 15px;
+}
+
 .formGroup label {
   display: block;
-  margin-bottom: 0.4rem;
+  margin-bottom: 6px;
   font-weight: 600;
   color: #444;
 }
@@ -109,31 +113,19 @@
 .formGroup input,
 .formGroup textarea {
   width: 100%;
-  padding: 0.65rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 0.95rem;
+  padding: 12px 16px;
+  font-size: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: white;
+  color: #333;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-sizing: border-box;
 }
 
-.submitButton {
-  background-color: #007bff;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  margin-top: 1rem;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.submitButton:hover {
-  background-color: #0056b3;
-}
-
-.submitButton:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+.formGroup textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
 .switchLabel {
@@ -144,103 +136,78 @@
   color: #333;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.actionButton {
+  padding: 6px 12px;
+  background-color: #0064B1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-right: 8px;
 }
 
+.actionButton:hover {
+  background-color: #0056b3;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+.actionButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
 
 @media (max-width: 768px) {
   .container {
     background: var(--main-background-mobile);
-
+    overflow-y: auto;
   }
 
   .mainContent {
     margin-left: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    width: 100%;
-    height: 100vh;
-    padding-bottom: 10rem;
+    padding-bottom: 90px;
     overflow-y: auto;
   }
 
-  .headerSection {
-    background: white;
-    padding: 0px 0px;
-    border-bottom: 1px solid #dddddd53;
-    display: flex;
-    align-items: center;
-    z-index: 1000;
-    margin-left: 0px;
-    width: calc(100%);
-    left: 0px;
-    transition: left 0.5s ease, width 0.5s ease;
+  .mainContent,
+  .mainContentCollapsed {
+    margin-left: 0;
   }
 
-  .heading {
-    /* color: black; */
+  .headerSection {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    align-items: center;
-    vertical-align: center;
+    background: var(--main-background-mobile);
+    border-bottom: none;
+    left: 0;
+    width: calc(100%);
+  }
+
+  .heading {
+    display: flex;
+    flex-direction: column;
     width: 100%;
+    align-items: center;
+    font-size: 2rem;
+    margin: 0;
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
     padding-top: 25px;
   }
 
-  .currentLogo {
-    padding: 0px 0px;
-  }
-
-  .adminSettings {
+  .adminCard {
     width: 100%;
-    padding: 0px 0px;
+    padding: 15px;
+    box-sizing: border-box;
   }
 
-  .settingsSection {
-    padding: 0.5px 0.5px;
-    border: none;
+  .sectionCard {
+    padding: 15px;
   }
 
-  .formGroup {
-    margin-bottom: 0;
-  }
-
-  .submitButton {
-    background-color: #36b2ff;
-    padding: 5px 0px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  .actionButton {
     width: 100%;
-    border-radius: 12px;
-    border: .5px outset rgba(230, 225, 225, 0.388);
-    box-shadow: inset 0px 0px 2px #87CEFA, 
-        inset -1px 2px 10px rgb(255, 255, 255),
-        inset 0 0 15px white,
-        inset 5px 0px 2px #ffffffd9,
-        1px 8px 15px rgba(128, 128, 128, 0.416);
+    padding: 8px 0;
   }
 }

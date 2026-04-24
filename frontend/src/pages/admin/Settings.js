@@ -4,12 +4,9 @@ import styles from "../../styles/Settings.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
 
-// Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
 const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || "localhost";
 const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || "4000";
-
-// Construct the backend URL dynamically
 const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
 
 function Settings() {
@@ -20,7 +17,9 @@ function Settings() {
       phone: "",
       address: "",
     },
+    tutorRequestsEnabled: true,
   });
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const { isCollapsed } = useSidebar();
@@ -33,7 +32,6 @@ function Settings() {
     try {
       const response = await axios.get(`${BACKEND_URL}/api/bughouse`);
 
-      // Fixes the logo error
       if (!response.data || !response.data.contactInfo) {
         setSettings({
           logo: "",
@@ -42,11 +40,11 @@ function Settings() {
             phone: "",
             address: "",
           },
-          tutorRequestsEnabled: true
+          tutorRequestsEnabled: true,
         });
       } else {
         setSettings(response.data);
-    }
+      }
     } catch (error) {
       console.error("Error fetching settings:", error);
     }
@@ -59,6 +57,7 @@ function Settings() {
 
   const handleContactInfoChange = (e) => {
     const { name, value } = e.target;
+
     setSettings((prev) => ({
       ...prev,
       contactInfo: {
@@ -73,21 +72,22 @@ function Settings() {
     setLoading(true);
 
     try {
-
       const formData = new FormData();
 
-      // If there's a new file selected, add it to formData
       if (selectedFile) {
         formData.append("logo", selectedFile);
       }
-      // Add contact info as JSON string
+
       formData.append("contactInfo", JSON.stringify(settings.contactInfo));
-      formData.append("tutorRequestsEnabled", JSON.stringify(settings.tutorRequestsEnabled));
+      formData.append(
+        "tutorRequestsEnabled",
+        JSON.stringify(settings.tutorRequestsEnabled)
+      );
 
       await axios.put(`${BACKEND_URL}/api/bughouse`, formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "multipart/form-data", 
+          "Content-Type": "multipart/form-data",
         },
       });
 
@@ -101,41 +101,37 @@ function Settings() {
     }
   };
 
-
-
-  // if (!settings || !settings.contactInfo) return <div>Loading settings...</div>;
   return (
     <div className={styles.container}>
-      <AdminSideBar selected="admin-settings"></AdminSideBar>
-      
-        
+      <AdminSideBar selected="admin-settings" />
+
       <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
         <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
           <h1 className={styles.heading}>BugHouse Settings</h1>
         </div>
-        <div className={styles.adminSettings}>
+
+        <div className={styles.adminCard}>
           <form onSubmit={handleSubmit}>
-            <div className={styles.settingsSection}>
+            <div className={styles.sectionCard}>
               <h3>Current Logo</h3>
+
               {settings?.logo && (
                 <div className={styles.currentLogo}>
                   <img
                     src={settings.logo}
                     alt="Current Logo"
-                    style={{
-                      width: "150px",
-                      height: "150px",
-                      objectFit: "contain",
-                    }}
+                    className={styles.logoImage}
                   />
                 </div>
               )}
+
               <h3>Upload New Logo</h3>
               <input type="file" accept="image/*" onChange={handleFileSelect} />
             </div>
 
-            <div className={styles.settingsSection}>
+            <div className={styles.sectionCard}>
               <h3>Contact Information</h3>
+
               <div className={styles.formGroup}>
                 <label>Email:</label>
                 <input
@@ -146,6 +142,7 @@ function Settings() {
                   required
                 />
               </div>
+
               <div className={styles.formGroup}>
                 <label>Phone:</label>
                 <input
@@ -156,6 +153,7 @@ function Settings() {
                   required
                 />
               </div>
+
               <div className={styles.formGroup}>
                 <label>Address:</label>
                 <textarea
@@ -166,23 +164,26 @@ function Settings() {
                 />
               </div>
             </div>
-            <div className={styles.toggleSection}>
-            <h3>Allow Tutor Requests</h3>
-            <label className={styles.switchLabel}>
-              <input
-                type="checkbox"
-                checked={settings.tutorRequestsEnabled}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    tutorRequestsEnabled: e.target.checked,
-                  }))
-                }
-              />
-              {settings.tutorRequestsEnabled ? "Enabled" : "Disabled"}
-            </label>
-          </div>
-            <button type="submit" disabled={loading} className={styles.submitButton}>
+
+            <div className={styles.sectionCard}>
+              <h3>Allow Tutor Requests</h3>
+
+              <label className={styles.switchLabel}>
+                <input
+                  type="checkbox"
+                  checked={settings.tutorRequestsEnabled}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      tutorRequestsEnabled: e.target.checked,
+                    }))
+                  }
+                />
+                {settings.tutorRequestsEnabled ? "Enabled" : "Disabled"}
+              </label>
+            </div>
+
+            <button type="submit" disabled={loading} className={styles.actionButton}>
               {loading ? "Submitting..." : "Submit"}
             </button>
           </form>
