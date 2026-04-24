@@ -140,3 +140,39 @@
 .eyeIcon:hover {
   color: #1E63C6;
 }
+@media (max-width: 768px) {
+  .background {
+    align-items: stretch;
+  }
+
+  .container {
+    max-width: none;
+    min-height: 100dvh;
+  }
+
+  .productName {
+    height: 13vh;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .formContainer {
+    max-width: none;
+    flex: 1;
+    min-width: 430px;
+    min-height: 0;
+    border-radius: 32px 32px 0 0;
+    padding: 28px 24px;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 0;
+  }
+
+  .column {
+    padding-bottom: 10px;
+  }
+}
