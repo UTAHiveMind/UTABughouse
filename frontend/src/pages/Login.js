@@ -4,7 +4,7 @@ import styles from "../styles/Login.module.css";
 import { validateLogin } from "../utils/LoginValidation";
 import { axiosPostData, axiosGetData } from "../utils/api";
 import axios from "axios";
-import { FaEnvelope, FaLock } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import bg from "../assets/Login_background.png";
 
 // Get configuration from environment variables
@@ -23,6 +23,7 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [logo, setLogo] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Check if the user is already authenticated via SSO or session
   useEffect(() => {
@@ -190,7 +191,7 @@ function Login() {
                   <FaLock />
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   placeholder="Enter password"
                   className={`form-control ${styles.input}`}
@@ -198,6 +199,13 @@ function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+
+                <span
+                  className={styles.eyeIcon}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </span>
                 {errors.password && (
                   <div className={styles.textDanger}>{errors.password}</div>
                 )}

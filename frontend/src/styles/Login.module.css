@@ -185,6 +185,20 @@
   pointer-events: none;
 }
 
+.eyeIcon {
+  position: absolute;
+  top: 50%;
+  right: 17px;
+  transform: translateY(-58%);
+  font-size: 23px;
+  color: #888888a7;
+  cursor: pointer;
+}
+
+.eyeIcon:hover {
+  color: #1E63C6;
+}
+
 .input::placeholder {
   color: rgba(128, 128, 128, 0.64);
 }
@@ -193,6 +207,7 @@
   padding-top: 15px !important;
   padding-bottom: 15px !important;
   padding-left: 50px !important;
+  padding-right: 45px !important;
 }
 
 
