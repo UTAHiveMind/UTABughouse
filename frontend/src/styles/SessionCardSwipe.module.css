@@ -286,8 +286,62 @@
   }
 
   .cardReaderBox {
-    background: linear-gradient(rgb(236, 241, 255), rgb(77, 128, 228));
+    background: linear-gradient(rgb(236, 241, 255), rgb(255, 255, 255));
   }
+
+  .inputIDNav {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 25px;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .inputIDNav input {
+    min-width: 100%;
+    border: 0.5px solid rgba(128, 128, 128, 0.572);
+    border-radius: 8px;
+
+  }
+
+.publicBackLink {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 100;
+
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  background-color: #3498dbaa !important;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.82rem !important;
+
+  border: 0.5px outset rgba(230, 225, 225, 0.388);
+  box-shadow:
+    inset 0px 0px 2px #87CEFA,
+    inset -1px 2px 10px rgb(255, 255, 255),
+    inset 0 0 15px white,
+    inset 5px 0px 2px #ffffffd9,
+    0px 4px 10px rgba(128, 128, 128, 0.416);
+
+  font-size: 0 !important;
+}
+
+.publicBackLink::before {
+  content: "←";
+  font-size: 20px;
+  color: #fff;
+}
 
 }
 
