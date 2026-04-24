@@ -39,7 +39,7 @@
   font-size: 0.9rem;
 }
 
-.refreshButton {
+/* .refreshButton {
   background-color: #f0f0f0;
   border: 1px solid #ddd;
   border-radius: 4px;
@@ -51,7 +51,7 @@
 
 .refreshButton:hover {
   background-color: #e0e0e0;
-}
+} */
 
 .refreshButton:disabled {
   cursor: not-allowed;
@@ -203,13 +203,32 @@
   font-size: 15px;
   color: #444;
 }
+.refreshButton, .csvButton {
+  background-color: #3498db;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.2);
+}
 
 
+.csvButton:hover, .refreshButton:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+}
 
+.csvButton:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
 
-
-
-
+.lastUpdated {
+  color: #edf3f4;
+  font-size: 14px;
+}
 
 
 
