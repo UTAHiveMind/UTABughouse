@@ -11,7 +11,7 @@ html, body {
     display: flex;
     min-height: 100vh;
     overflow: hidden;
-    background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+    background: white;
 }
 .toolbar {
     display: flex;
@@ -55,7 +55,7 @@ html, body {
 .headerSection {
     display: flex;
     gap: 15px;
-    background: white;
+    background: #0064B1;
     padding: 15px 25px;
     position: fixed;
     top: 0;
@@ -74,7 +74,7 @@ html, body {
 
 .heading {
     font-size: 2rem;
-    color: #007bff;
+    color: white;
     font-weight: bold;
     margin: 0;
     white-space: nowrap;
@@ -108,11 +108,11 @@ html, body {
 }
 
 .roleSelector select:hover {
-    border-color: #007bff;
+    border-color: #0064B1;
 }
 
 .roleSelector select:focus {
-    border-color: #007bff;
+    border-color: #0064B1;
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
@@ -137,7 +137,7 @@ html, body {
 .userTable thead {
     position: sticky;
     top: 0;
-    background: #007bff;
+    background: #0064B1;
     color: white;
     z-index: 10;
     display: table;
@@ -174,7 +174,7 @@ html, body {
 }
 
 .userTable thead tr:hover {
-    background: #007bff !important;
+    background: #0064B1 !important;
 }
 
 .userTable tr:hover {
@@ -183,7 +183,7 @@ html, body {
 
 .viewProfileButton {
     padding: 5px 10px;
-    background-color: #007bff;
+    background-color: #0064B1;
     color: white;
     border: none;
     border-radius: 4px;

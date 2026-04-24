@@ -2,7 +2,7 @@
 .container {
   display: flex;
   height: 100vh;
-  background-color:linear-gradient(135deg, #007bff, #6f42c1);
+  background-color:#0064B1;
 }
 
 .mainContent {

@@ -1,7 +1,7 @@
 .container {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #007bff, #6f42c1); /* Full page gradient background */
+  background: #0064B1; /* Full page gradient background */
 }
 
 .mainContent {

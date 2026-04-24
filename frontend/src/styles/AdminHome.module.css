@@ -4,7 +4,7 @@
   align-items: flex-start;   /* keep content near top */
   min-height: 100vh;
   /* background: linear-gradient(135deg, #007bff, #6f42c1); */
-  background: linear-gradient(to bottom right, #0064b1, #0064b1, #004075);
+  background: white;
   margin-left :80px;/*accounts for sidebar when its minimized*/
   overflow-x: hidden;
 }
@@ -29,13 +29,13 @@
 
 .pageHeader h1 {
   font-size: 2.5rem;
-  color: #fdfdfd;
+  color: #111827;
   margin-bottom: 0.5rem;
   font-weight: 600;
 }
 
 .pageHeader p {
-  color: #e7ebef;
+  color: #374151;
   font-size: 1.1rem;
   max-width: 700px;
   margin: 0 auto;
