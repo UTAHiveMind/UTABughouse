@@ -1,29 +1,30 @@
-/* TutorHome.module.css */
-
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: #0064B1; /* Full page gradient background */
+  background: white; /* FIXED: remove blue background */
 }
 
+/* layout */
 .container {
   display: flex;
-  min-height: 100vh; /* Full viewport height */
+  min-height: 100vh;
 }
 
+/* MAIN CONTENT */
 .mainContent {
   flex: 1;
   padding: 20px;
-  color: #e0e7ed; /* Light text for better contrast */
-  margin-left :280px;/*accounts for sidebar when its minimized*/
+  margin-left: 260px;
+  color: #212529; /* 🔥 FIX: dark text */
   transition: margin-left 0.5s ease;
 }
 
 .mainContentCollapsed {
-  margin-left: 90px;
+  margin-left: 80px;
 }
 
+/* HEADER CARD */
 .headingRow {
   display: flex;
   justify-content: space-between;
@@ -38,188 +39,119 @@ html, body {
   flex-wrap: wrap;
 }
 
+/* TEXT FIXES */
 .headingRow h1 {
   font-size: 2.6rem;
   margin-bottom: 0.3rem;
+  color: white;
 }
 
 .headingRow p {
   font-size: 1.1rem;
-  color: #e2e8f0;
+  color: #eaf4ff; /* slight lighter blue-white */
   margin: 0;
 }
 
-.calSubHeading{
-  /*text-align:center;*/
-  margin-top:10px;
-  margin-bottom: 20px;
-  margin-left:10px;
-}
-
-.tutorHomeSec{
-  margin-bottom: 20px;
+/* SECTION */
+.tutorHomeSec {
   margin-top: 20px;
-}
-
-.sidebar {
-  width: 250px;
-  background: rgba(0, 0, 0, 0.8); /* Sidebar background */
-  color: white;
-  display: flex;
-  flex-direction: column;
+  background: white; /* 🔥 FIX */
   padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.sidebar h1 {
-  font-size: 1.8rem;
-  margin-bottom: 20px;
+/* SUB HEADING */
+.calSubHeading {
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #212529; /* 🔥 FIX */
 }
 
-.sidebar button {
-  margin-bottom: 10px;
-  padding: 10px 15px;
-  background-color: #0064B1; /* Primary blue for buttons */
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  text-align: left;
-}
-
-.sidebar button:hover {
-  background-color: #0056b3; /* Darker blue on hover */
-}
-
-.sidebar .logoutButton {
-  background-color: #dc3545; /* Red for logout button */
-}
-
-.sidebar .logoutButton:hover {
-  background-color: #a71d2a; /* Darker red on hover */
-}
-
-.mainContent {
-  flex: 1;
-  padding: 20px;
-  color: #e0e7ed; /* Light text for better contrast */
-}
-
-.heading {
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-  color:white;
-}
-
-.schedule {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-}
-
+/* CARDS */
 .card {
   background: white;
-  color: black;
+  color: #212529;
   padding: 10px;
   border-radius: 8px;
-  width: 150px;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
 }
 
+/* OPTIONAL sections */
 .courseList, .notifications {
   margin-top: 20px;
   padding: 15px;
-  background: rgba(0, 0, 0, 0.2); /* Translucent black */
+  background: white; /* 🔥 FIX */
   border-radius: 8px;
+  border: 1px solid #ddd;
 }
 
+/* ============================= */
+/* 🔥 CALENDAR TEXT FIX */
+/* ============================= */
 
+/* makes calendar text dark instead of grey */
+:global(.rbc-calendar) {
+  color: #212529 !important;
+}
 
+/* day headers */
+:global(.rbc-header) {
+  color: #212529 !important;
+  font-weight: bold;
+}
 
+/* time column */
+:global(.rbc-time-gutter),
+:global(.rbc-label) {
+  color: #212529 !important;
+}
 
+/* slots */
+:global(.rbc-time-slot) {
+  color: #495057 !important;
+}
 
+/* remove faded grey background */
+:global(.rbc-off-range),
+:global(.rbc-off-range-bg) {
+  background: white !important;
+  color: #212529 !important;
+}
 
-
-
-
-
-
-
-
-
-
+/* ============================= */
+/* MOBILE */
+/* ============================= */
 
 @media (max-width: 768px) {
   .container {
     background: var(--main-background-mobile);
-    width: 100%;
-    height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    padding-bottom: 10rem;
   }
 
   .mainContent {
     margin-left: 0;
     width: 100%;
-    padding: 0px;
-  }
-
-  .heading, .calSubHeading {
-    color: var(--main-title-color-mobile);
-  }
-
-  .headingRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 00px;
-    color: white;
-    margin-bottom: 0px;
-    flex-wrap: wrap;
-    width: 100%;
-    padding: 0px 0px;
-    display: flex;
-    flex-direction: column;
-    padding-top: 25px;
-  }
-
-  .headingRow h1, .headingRow p {
-    color: var(--main-title-color-mobile);
-  }
-
-  .headingRow h1 {
-    font-weight: var(--main-title-font-weight-mobile);
-    width: 100%;
-    /* padding-top: 25px; */
-
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .calSubHeading{
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
+    padding: 10px;
   }
 
   .headingRow {
     background: white;
+    padding-top: 25px;
+    text-align: center;
   }
 
-  .notifications {
-    background-color: white;
-    border: 1px solid rgba(128, 128, 128, 0.376);
-    box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.164);
-  }
-
-  .notifications h2, .notifications p {
+  .headingRow h1,
+  .headingRow p {
     color: var(--main-title-color-mobile);
   }
 
+  .calSubHeading {
+    text-align: center;
+  }
+
+  .tutorHomeSec {
+    padding: 12px;
+  }
 }

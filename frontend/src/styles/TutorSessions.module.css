@@ -1,95 +1,120 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  font-family: sans-serif;
+  background: white;
+}
+
 .container {
   display: flex;
   min-height: 100vh;
-  background: #0064B1; /* Full page gradient background */
+  overflow: hidden;
+  background: white;
 }
 
 .mainContent {
   flex: 1;
-  padding: 2rem;
-  margin-left :280px;/*accounts for sidebar when its minimized*/
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  margin-top: 90px;
+  margin-left: 260px;
+  width: 100%;
+  color: #212529;
+  overflow: visible;
   transition: margin-left 0.5s ease;
 }
 
 .mainContentCollapsed {
-  margin-left: 90px;
+  margin-left: 80px;
+}
+
+.headerSection {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #0064b1;
+  padding: 15px 25px;
+  position: fixed;
+  top: 0;
+  left: 270px;
+  right: 15px;
+  z-index: 100;
+  max-width: 100vw;
+  transition: left 0.5s ease;
+}
+
+.headerSectionCollapsed {
+  left: 80px;
 }
 
 .heading {
   font-size: 2rem;
-  color: #ffffff;
-  margin-bottom: 2rem;
-}
-
-.spinnerContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 200px;
-}
-
-.spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
+  color: white;
+  font-weight: bold;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .error {
   color: #dc3545;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 12px 16px;
+  margin-bottom: 20px;
   background-color: #ffe6e6;
-  border-radius: 4px;
+  border-radius: 8px;
+  border: 1px solid #f5c2c7;
 }
 
 .sessionsContainer {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 20px;
 }
 
-.upcomingSessions,
-.completedSessions,
-.cancelledSessions, 
-.noShowSessions {
-  background-color: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* .noShowTag {
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0.15em 0.7em;
-  background: #ffc107;
-  color: #333;
+.sessionSection {
+  background: white;
+  padding: 20px;
   border-radius: 12px;
-  font-size: 0.85em;
-  font-weight: 600;
-  vertical-align: middle;
-  letter-spacing: 0.5px;
-} */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sectionTitle {
+  color: #212529;
+  margin: 0 0 16px 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e1e4e8;
+}
 
 .sessionsList {
-  max-height: 400px;
+  max-height: 420px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 12px;
   overflow-y: auto;
+  padding-right: 4px;
 }
 
 .sessionCard {
   border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 1rem;
+  border-radius: 10px;
+  padding: 16px;
   background-color: #ffffff;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 18px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sessionCard:hover {
+  background-color: #dbe9ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .sessionInfo {
@@ -97,45 +122,53 @@
 }
 
 .sessionInfo p {
-  margin: 0.5rem 0;
+  margin: 8px 0;
+  color: #333;
+  line-height: 1.35;
 }
 
 .sessionActions {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 180px;
 }
 
 .actionButton {
-  padding: 0.5rem 1rem;
+  padding: 8px 12px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  text-align: center;
+}
+
+.actionButton:hover {
+  transform: translateY(-1px);
 }
 
 .completeButton {
-  background-color: #28a745;
+  background-color: #0064b1;
   color: white;
 }
 
 .completeButton:hover {
-  background-color: #218838;
+  background-color: #0056b3;
+}
+
+.noShowButton {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.noShowButton:hover {
+  background-color: #e0a800;
 }
 
 .cancelButton {
   background-color: #dc3545;
   color: white;
-}
-
-.noShowButton{
-  background-color: #ffc107;
-  color: white;
-}
-
-.noShowButton
-:hover {
-  background-color: #e0a800;
 }
 
 .cancelButton:hover {
@@ -145,61 +178,142 @@
 .noSessions {
   color: #666;
   text-align: center;
-  padding: 1rem;
+  padding: 18px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin: 0;
 }
 
-h2 {
-  color: #444;
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
+.statusBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.statusScheduled {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.statusCompleted {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.statusCancelled {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.statusNoShow {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.spinnerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: #0064b1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 100, 177, 0.25);
+  border-top: 4px solid #0064b1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 @media (max-width: 768px) {
   .container {
     background: var(--main-background-mobile);
+    overflow-y: auto;
   }
 
-  .mainContent {
+  .mainContent,
+  .mainContentCollapsed {
     margin-left: 0;
-    padding: 10px;
-    height: 100vh;
-    padding-bottom: 10rem;
+    margin-top: 90px;
+    padding: 12px;
+    padding-bottom: 90px;
+    width: 100%;
+    overflow-y: auto;
+  }
+
+  .headerSection,
+  .headerSectionCollapsed {
+    left: 0;
+    right: 0;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    background: var(--main-background-mobile);
+    border-bottom: none;
+    padding: 15px 20px;
   }
 
   .heading {
-    color: var(--main-title-color-mobile);
-    width: 100%;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-weight: var(--title-font-weight-mobile);
+    justify-content: center;
+    width: 100%;
+    font-size: 2rem;
+    font-weight: var(--main-title-font-weight-mobile);
+    color: var(--main-title-color-mobile);
+    text-align: center;
+    padding-top: 10px;
   }
 
-  .upcomingSessions,
-  .completedSessions {
-    background-color: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    border: 1px solid rgba(128, 128, 128, 0.252);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  .sessionSection {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .sectionTitle {
+    text-align: center;
+    font-size: 1.35rem;
+  }
+
+  .sessionCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sessionActions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .actionButton {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .sessionsList {
+    max-height: none;
+    overflow-y: visible;
   }
 }

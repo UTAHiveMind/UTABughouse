@@ -3,125 +3,218 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   overflow-x: hidden;
+  font-family: sans-serif;
+  background: white;
 }
 
 .pageWrapper {
-  height: 100vh;
+  min-height: 100vh;
   overflow: hidden;
 }
 
 .container {
   display: flex;
   min-height: 100vh;
+  overflow: hidden;
+  background: white;
 }
 
 .mainContent {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 20px;
+  padding: 32px 16px 20px 16px;
+  margin-top: 70px;
+  margin-left: 80px;
+  width: calc(100% - 80px);
   color: #212529;
-  margin-left :260px;/*accounts for sidebar when its minimized*/
-  transition: margin-left 0.5s ease;
+  overflow: visible;
+  transition: margin-left 0.5s ease, width 0.5s ease;
 }
 
 .mainContentCollapsed {
   margin-left: 80px;
+  width: calc(100% - 80px);
+}
+
+/* HEADER */
+.headerSection {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #0064b1;
+  padding: 15px 20px;
+  position: fixed;
+  top: 0;
+  left: 80px;
+  right: 0;
+  z-index: 100;
+}
+
+.headerSectionCollapsed {
+  left: 80px;
 }
 
 .heading {
   font-size: 2rem;
-  color: #ffffff;
-  margin-bottom: 20px;
-  text-align: center;
+  color: white;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* CARD */
+.availabilityCard {
   width: 100%;
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.instructionsBox {
+  background: #f8f9fa;
+  border-left: 4px solid #0064b1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
 }
 
 .calendarContainer {
   width: 100%;
-  max-width: 900px;
   border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
-  padding: 20px;
-  margin-bottom: 20px;
-  overflow-x: auto;
+  border-radius: 10px;
+  background: white;
+  padding: 12px;
+}
+
+/* BUTTON */
+.buttonRow {
+  margin-top: 15px;
 }
 
 .submitButton {
-  padding: 10px 20px;
-  background-color: #dc3545;
+  padding: 8px 14px;
+  background-color: #0064b1;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 16px;
-  text-align: center;
 }
 
 .submitButton:hover {
-  background-color: #a71d2a;
+  background-color: #0056b3;
 }
 
+/* LOADING */
 .spinnerContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 500px;
-  padding-left: 250px;
+  height: 400px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 100, 177, 0.25);
+  border-top: 4px solid #0064b1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.calendarContainer :global(.rbc-calendar) {
+  font-family: sans-serif;
+  color: #212529;
+}
+
+.calendarContainer :global(.rbc-time-view) {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+
+.calendarContainer :global(.rbc-header) {
+  padding: 10px 8px;
+  background: white !important;
+  color: #212529 !important;
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+}
+
+/* force ALL header text to black */
+.calendarContainer :global(.rbc-header span),
+.calendarContainer :global(.rbc-header div),
+.calendarContainer :global(.rbc-header a) {
+  color: #212529 !important;
+}
+
+/* remove weird grey friday / off-range */
+.calendarContainer :global(.rbc-off-range),
+.calendarContainer :global(.rbc-off-range-bg) {
+  background: white !important;
+  color: #212529 !important;
+}
+
+/* GRID CLEANUP */
+.calendarContainer :global(.rbc-time-content),
+.calendarContainer :global(.rbc-timeslot-group),
+.calendarContainer :global(.rbc-day-slot),
+.calendarContainer :global(.rbc-time-column),
+.calendarContainer :global(.rbc-day-bg) {
+  background: white !important;
+}
+
+/* LEFT TIME COLUMN */
+.calendarContainer :global(.rbc-time-gutter),
+.calendarContainer :global(.rbc-label) {
+  color: #495057;
+  background: white;
+}
+
+/* REMOVE TODAY HIGHLIGHT */
+.calendarContainer :global(.rbc-today) {
+  background: white !important;
+}
+
+/* EVENTS */
+.calendarContainer :global(.rbc-event) {
+  background-color: #0064b1;
+  border-radius: 6px;
   color: white;
 }
 
-
-
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.calendarContainer :global(.rbc-event-content) {
+  color: white;
 }
 
+/* CURRENT TIME LINE */
+.calendarContainer :global(.rbc-current-time-indicator) {
+  background-color: #dc3545;
+}
 
+/* SPIN */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
+/* MOBILE */
 @media (max-width: 768px) {
-  .container {
-    background: var(--main-background-mobile);
-  }
-
-  .heading {
-    padding-top: 25px;
-    color: var(--main-title-color-mobile);
-  }
-
   .mainContent {
     margin-left: 0;
-    padding: 10px;
-    /* height: 80vh; */
+    width: 100%;
   }
 
-  .calendarContainer {
+  .headerSection {
+    left: 0;
+  }
+
+  .submitButton {
     width: 100%;
-    padding: 0px;
   }
 }
