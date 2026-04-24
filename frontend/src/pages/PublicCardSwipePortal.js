@@ -1,12 +1,13 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "../styles/PublicCardSwipe.module.css";
+import bg from "../assets/background.png";
 
 function PublicCardSwipePortal() {
   const navigate = useNavigate();
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} style={{backgroundImage: `url(${bg})`}}>
       <div className={styles.panel}>
         <h1 className={styles.title}>Card Swipe</h1>
         <div className={styles.buttonRow}>

@@ -4,6 +4,8 @@ import styles from "../styles/Login.module.css";
 import { validateLogin } from "../utils/LoginValidation";
 import { axiosPostData, axiosGetData } from "../utils/api";
 import axios from "axios";
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import bg from "../assets/background.png";
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
@@ -21,6 +23,7 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const [logo, setLogo] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Check if the user is already authenticated via SSO or session
   useEffect(() => {
@@ -126,10 +129,8 @@ function Login() {
   return (
     <div
       className={`d-flex justify-content-center align-items-center vh-100 ${styles.background} ${styles.loginRoot}`}
+        style={{backgroundImage: `url(${bg})`}}
     >
-      <Link to="/card-swipe" className={styles.cardSwipeCornerButton}>
-        Card Swipe
-      </Link>
       <div className={styles.container}>
         {/* <div className={styles.productName}>bugHouse</div> */}
         <div className={styles.productHeader}>
@@ -143,6 +144,9 @@ function Login() {
           <div className={styles.productName}>bugHouse</div>
         </div>
         <div className={`shadow-lg ${styles.formContainer}`}>
+          <div className={styles.welcomeTitleNav}>
+            <p className={styles.welcomeTitle}>WELCOME BACK!</p>
+          </div>
           <h2 className={styles.title}>Login</h2>
 
           {/* Display success message if redirected from signup */}
@@ -158,35 +162,54 @@ function Login() {
               <label htmlFor="email" className={styles.label}>
                 Email address
               </label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Enter email"
-                className="form-control input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              {errors.email && (
-                <div className={styles.textDanger}>{errors.email}</div>
-              )}
+              
+              <div className={styles.inputGroup}>
+                <span className={styles.inputIcon}>
+                  <FaEnvelope />
+                </span>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Enter email"
+                  className={`form-control ${styles.input}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                {errors.email && (
+                  <div className={styles.textDanger}>{errors.email}</div>
+                )}
+              </div>
             </div>
             <div className="mb-3">
               <label htmlFor="password" className={styles.label}>
                 Password
               </label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Enter password"
-                className="form-control input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              {errors.password && (
-                <div className={styles.textDanger}>{errors.password}</div>
-              )}
+
+              <div className={styles.inputGroup}>
+                <span className={styles.inputIcon}>
+                  <FaLock />
+                </span>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  placeholder="Enter password"
+                  className={`form-control ${styles.input}`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+
+                <span
+                  className={styles.eyeIcon}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </span>
+                {errors.password && (
+                  <div className={styles.textDanger}>{errors.password}</div>
+                )}
+              </div>
             </div>
             <button
               type="submit"
@@ -196,6 +219,9 @@ function Login() {
               {isLoading ? "Logging in..." : "Login"}
             </button>
           </form>
+          <div className={styles.divider}>
+            <span>OR</span>
+          </div>
 
           {/* SSO Login Button */}
           <button
@@ -219,7 +245,15 @@ function Login() {
               Reset Password
             </Link>
           </p>
+
+          <div className={styles.cardSwipeNav}>
+          <Link to="/card-swipe" className={styles.cardSwipeButton}>
+            Card Swipe
+          </Link>
+          </div>
+
         </div>
+
       </div>
     </div>
   );
