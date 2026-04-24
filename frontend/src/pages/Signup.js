@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import styles from '../styles/Signup.module.css';
 import { validateSignup } from '../utils/SignupValidation';
 import { axiosPostData } from '../utils/api';
+import bg from '../assets/background.png';
+import { FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
 const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || 'localhost';
@@ -21,6 +23,7 @@ function Signup() {
   const [successMessage, setSuccessMessage] = useState('');
   const [serverError, setServerError] = useState('');
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,7 +71,8 @@ function Signup() {
   };
 
   return (
-    <div className={`d-flex justify-content-center align-items-center vh-100 ${styles.background}`}>
+    <div className={`d-flex justify-content-center align-items-center vh-100 ${styles.background}`}
+    style={{backgroundImage: `url(${bg})`}}>
       <div className={styles.container}>
         <div className={styles.productName}>bugHouse</div>
 
@@ -131,14 +135,22 @@ function Signup() {
             <div className={styles.row}>
               <div className={styles.column}>
                 <label className={styles.label}>Password</label>
-                <input
-                  type="password"
-                  className={`form-control ${styles.input}`}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className={styles.inputGroup}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className={`form-control ${styles.input}`}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <span
+                    className={styles.eyeIcon}
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </span>
                 {errors.password && <div className={styles.textDanger}>{errors.password}</div>}
+                </div>
               </div>
               <div className={styles.column}>
                 <label className={styles.label}>Student ID</label>

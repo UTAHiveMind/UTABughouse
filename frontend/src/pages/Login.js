@@ -5,7 +5,7 @@ import { validateLogin } from "../utils/LoginValidation";
 import { axiosPostData, axiosGetData } from "../utils/api";
 import axios from "axios";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
-import bg from "../assets/Login_background.png";
+import bg from "../assets/background.png";
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
