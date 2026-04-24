@@ -5,22 +5,27 @@ body {
   width: 100%;
   height: 100%;
   overflow-x: hidden;
+  font-family: sans-serif;
+  background: white;
 }
 
 .container {
   display: flex;
   min-height: 100vh;
+  overflow: hidden;
+  background: white;
 }
 
 .mainContent {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
   padding: 20px;
-  color: #1b1b1b;
-  margin-left :260px;/*accounts for sidebar when its minimized*/
+  margin-top: 90px;
+  color: #212529;
+  overflow: visible;
+  margin-left: 260px;
+  width: 100%;
   transition: margin-left 0.5s ease;
 }
 
@@ -28,87 +33,242 @@ body {
   margin-left: 80px;
 }
 
+.headerSection {
+  display: flex;
+  gap: 15px;
+  background: #0064b1;
+  padding: 15px 25px;
+  position: fixed;
+  top: 0;
+  left: 270px;
+  right: 15px;
+  max-width: 100vw;
+  transition: left 0.5s ease;
+  width: calc(100%);
+  z-index: 100;
+}
+
+.headerSectionCollapsed {
+  left: 80px;
+}
+
 .heading {
   font-size: 2rem;
-  color: #191818;
-  margin-bottom: 20px;
-  text-align: center;
-  width: 100%;
+  color: white;
+  font-weight: bold;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .profileContainer {
-  width: 80%;
+  width: 100%;
   max-width: 900px;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profileDivider {
+  display: none;
+}
+
+.profileSection {
+  width: 100%;
+}
+
+.imageSection {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.profileImage,
+.profilePlaceholder {
+  width: 105px;
+  height: 105px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.profileImage {
+  object-fit: cover;
+  border: 3px solid #0064b1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.profilePlaceholder {
+  background-color: #f2f2f2;
+  color: #666;
+  border: 3px solid #0064b1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.profileInfo {
+  color: #333;
+}
+
+.profileInfo p {
+  margin: 12px 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.profileInfo strong {
+  color: #212529;
+  margin-right: 8px;
+}
+
+.inputField,
+.textareaField,
+.selectField {
+  width: 100%;
+  max-width: 500px;
+  padding: 10px 12px;
+  font-size: 15px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
-  padding: 20px;
-  margin-bottom: 20px;
-  overflow: hidden;
-  position: relative; /* Added for absolute positioning of profile image */
-}
-
-/*newcode*/
-.inputField {
-  width: 100%;
-  max-width: 400px;
-  padding: 8px 10px;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  background-color: white;
+  color: #333;
   box-sizing: border-box;
-  background-color: #fefefe;
-  transition: border-color 0.3s ease-in-out;
-}
-
-.inputField:focus {
-  border-color: #4a90e2;
-  outline: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .textareaField {
-  width: 100%;
-  max-width: 600px;
   min-height: 100px;
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  background-color: #fefefe;
   resize: vertical;
-  transition: border-color 0.3s ease-in-out;
 }
 
-.textareaField:focus {
-  border-color: #4a90e2;
+.inputField:focus,
+.textareaField:focus,
+.selectField:focus {
+  border-color: #0064b1;
   outline: none;
 }
 
-.selectField {
-  padding: 8px 10px;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-  max-width: 300px;
+.fileInput {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  color: #333;
 }
-/*end of newcode*/
 
-.submitButton {
-  padding: 10px 20px;
-  background-color: #dc3545;
+.courseList {
+  padding-left: 20px;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.buttonGroup {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.saveButton,
+.cancelButton,
+.disabledButton {
+  padding: 8px 14px;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
+  font-weight: bold;
   cursor: pointer;
-  font-size: auto;
-  text-align: center;
+  transition: background-color 0.3s ease;
 }
 
-.submitButton:hover {
+.saveButton {
+  background-color: #0064b1;
+}
+
+.saveButton:hover {
+  background-color: #0056b3;
+}
+
+.saveButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  background-color: #dc3545;
+}
+
+.cancelButton:hover {
   background-color: #a71d2a;
+}
+
+.disabledButton {
+  background-color: #cccccc;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.roleButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.tutorRequestSection {
+  background: #f8f9fa;
+  border-left: 4px solid #0064b1;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.tutorRequestWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.tutorRequestHeading {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin: 0 0 6px 0;
+  color: #212529;
+}
+
+.tutorRequestSubtext {
+  font-size: 1rem;
+  color: #333;
+  margin: 0 0 12px 0;
+}
+
+.disabledMessage {
+  color: #555;
+  margin: 0;
+}
+
+.successMessage {
+  background-color: #dff0d8;
+  color: #3c763d;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #3c763d;
+}
+
+.error {
+  background-color: #f2dede;
+  color: #a94442;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #a94442;
 }
 
 .spinnerContainer {
@@ -116,28 +276,54 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 500px;
-  padding-left: 250px;
-  color: white;
+  height: 400px;
+  color: #0064b1;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(0, 123, 255, 0.3);
-  border-top: 4px solid #007bff;
+  border: 4px solid rgba(0, 100, 177, 0.25);
+  border-top: 4px solid #0064b1;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 10px;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+:global(.react-select__control) {
+  border: 1px solid #ddd !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  min-height: 42px !important;
+}
+
+:global(.react-select__control--is-focused) {
+  border-color: #0064b1 !important;
+}
+
+:global(.react-select__multi-value) {
+  background-color: #eaf4ff !important;
+}
+
+:global(.react-select__multi-value__label) {
+  color: #0064b1 !important;
+  font-weight: bold;
+}
+
+.submitButton {
+  padding: 10px 20px;
+  background-color: #0064b1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.submitButton:hover {
+  background-color: #0056b3;
 }
 
 .roleChangeForm {
@@ -153,128 +339,66 @@ body {
   min-width: 140px;
 }
 
-.roleButtons {
-  display: flex;
-  gap: 10px;
-}
-
-/* Profile Section */
-.profileSection {
-  position: relative;
-  width: 100%;
-  padding-top: 20px;
-}
-
-.profileImage {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 100px; /* Smaller size */
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.profilePlaceholder {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background-color: #ddd;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  color: #666;
-  border: 3px solid #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.profileInfo {
-  margin: 20px 0;
-  color: #333;
-  padding-right: 140px; /* Make space for the profile image */
-}
-
-.profileInfo p {
-  margin: 10px 0;
-  font-size: 1rem;
-  text-align: left;
-}
-
-.profileInfo strong {
-  color: #555;
-  margin-right: 8px;
-}
-
-/* Availability Section */
-
 .calendarContainer {
-    width: 80%;
-    max-width: 900px;
-    border: 1px solid #000000;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    background-color: #fff;
-    padding: 20px;
-    margin-bottom: 20px;
-    overflow: hidden;
+  width: 80%;
+  max-width: 900px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  padding: 20px;
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
 .availabilitySection {
-    margin-top: 20px;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 600px;
-    text-align: center;
-  }
-  
-  .availabilitySection h2 {
-    color: #333;
-    margin-bottom: 15px;
-    font-size: 1.5rem;
-    text-align: center;
-  }
-  
-  .availabilityList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .availabilityItem {
-    padding: 12px;
-    background: #ffffff;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    font-size: 1rem;
-    color: #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: background 0.2s ease-in-out;
-  }
-  
-  .availabilityItem:hover {
-    background: #e9ecef;
-  }
-  
-  .availabilityTime {
-    font-weight: bold;
-    color: #007bff;
-  }
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+}
 
-  /* Add these to your existing FindMyTutorProfile.module.css file */
+.availabilitySection h2 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.availabilityList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.availabilityItem {
+  padding: 12px;
+  background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s ease-in-out;
+}
+
+.availabilityItem:hover {
+  background: #e9ecef;
+}
+
+.availabilityTime {
+  font-weight: bold;
+  color: #0064b1;
+}
 
 .calendarHeader {
   display: flex;
@@ -288,91 +412,28 @@ body {
   gap: 10px;
 }
 
-.editScheduleButton {
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.editScheduleButton:hover {
-  background-color: #3a7bc8;
-}
-
-.fullscreenButton {
-  background-color: #7e57c2;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.fullscreenButton:hover {
-  background-color: #6a4caf;
-}
-
+.editScheduleButton,
+.fullscreenButton,
 .exitFullscreenButton {
-  background-color: #7e57c2;
+  background-color: #0064b1;
   color: white;
   border: none;
   padding: 8px 15px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: bold;
   transition: background-color 0.3s;
 }
 
+.editScheduleButton:hover,
+.fullscreenButton:hover,
 .exitFullscreenButton:hover {
-  background-color: #6a4caf;
-}
-
-.saveButton {
-  background-color: #007bff; /* Blue */
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-  margin-right: 10px; /* Add space between save and cancel */
-}
-
-.saveButton:hover {
   background-color: #0056b3;
-}
-
-.saveButton:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-
-.cancelButton {
-  background-color: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.cancelButton:hover {
-  background-color: #d32f2f;
 }
 
 .editingInstructions {
   background-color: #f8f9fa;
-  border-left: 4px solid #4a90e2;
+  border-left: 4px solid #0064b1;
   padding: 10px 15px;
   margin-bottom: 15px;
   border-radius: 0 4px 4px 0;
@@ -384,25 +445,6 @@ body {
   color: #555;
 }
 
-.successMessage {
-  background-color: #dff0d8;
-  color: #3c763d;
-  padding: 10px 15px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  border-left: 4px solid #3c763d;
-}
-
-.error {
-  background-color: #f2dede;
-  color: #a94442;
-  padding: 10px 15px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  border-left: 4px solid #a94442;
-}
-
-/* Fullscreen mode styling */
 .fullscreenContainer {
   position: fixed;
   top: 0;
@@ -424,107 +466,93 @@ body {
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
 }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    .availabilitySection {
-      width: 90%;
-      padding: 15px;
-    }
-    
-    .availabilityItem {
-      font-size: 0.9rem;
-      padding: 10px;
-    }
-  }
-  
-  .tutorRequestWrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* space between file input and button */
-  margin-top: 20px;
-}
-
-.tutorRequestHeading {
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-top: 40px;
-  margin-bottom: 5px;
-  color: #555;
-}
-
-.tutorRequestSubtext {
-  font-size: 1rem;
-  color: #333;
-  margin-bottom: 15px;
-}
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
-
-
-
-
-
-
-
-
-
-
 
 @media (max-width: 768px) {
   .container {
     background: var(--main-background-mobile);
+    overflow-y: auto;
   }
 
-  /* .heading {
-    color: var(--main-title-color-mobile);
-  } */
-
-
-  .mainContent, .profileContainer {
+  .mainContent,
+  .mainContentCollapsed {
     margin-left: 0;
+    padding-bottom: 90px;
+    overflow-y: auto;
+  }
+
+  .headerSection {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
+    left: 0;
+    background: var(--main-background-mobile);
     width: 100%;
-    height: 100vh;
-    /* padding: 0px 0px; */
+    border-bottom: none;
   }
 
-  .mainContent {
-    padding: 0px 0px;
-  }
-
-    .heading {
-    /* color: black; */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    vertical-align: center;
-    width: 100%;
-    font-weight: var(--main-title-font-weight-mobile);
-    color: var(--main-title-color-mobile);
-  }
-
-  .saveButton {
-    background-color: #36b2ff;
-    padding: 5px 0px;
+  .heading {
     display: flex;
     justify-content: center;
-    align-items: center;
     width: 100%;
-    border-radius: 12px;
-    border: .5px outset rgba(230, 225, 225, 0.388);
-    box-shadow: inset 0px 0px 2px #87CEFA, 
-        inset -1px 2px 10px rgb(255, 255, 255),
-        inset 0 0 15px white,
-        inset 5px 0px 2px #ffffffd9,
-        1px 8px 15px rgba(128, 128, 128, 0.416);
+    font-size: 2rem;
+    margin: 0;
+    font-weight: var(--main-title-font-weight-mobile);
+    color: var(--main-title-color-mobile);
+    padding-top: 25px;
+  }
+
+  .profileContainer {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .imageSection {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profileInfo p {
+    width: 100%;
+  }
+
+  .inputField,
+  .textareaField,
+  .selectField,
+  .fileInput {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .buttonGroup,
+  .roleButtons,
+  .tutorRequestWrapper {
+    width: 100%;
+  }
+
+  .saveButton,
+  .cancelButton,
+  .disabledButton {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .availabilitySection {
+    width: 90%;
+    padding: 15px;
+  }
+
+  .availabilityItem {
+    font-size: 0.9rem;
+    padding: 10px;
   }
 }
-  

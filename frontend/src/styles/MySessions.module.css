@@ -1,14 +1,20 @@
 .container {
   display: flex;
   min-height: 100vh;
-  background: #0064B1;
+  background: #f4f6f9;
+  overflow-x: hidden;
 }
 
 .mainContent {
   flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-  margin-left :270px;/*accounts for sidebar when its minimized*/
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  margin-top: 90px;
+  margin-left: 260px;
+  color: #212529;
+  overflow: visible;
+  width: 100%;
   transition: margin-left 0.5s ease;
 }
 
@@ -16,132 +22,210 @@
   margin-left: 80px;
 }
 
+.headerSection {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #0064B1;
+  padding: 15px 25px;
+  position: fixed;
+  top: 0;
+  left: 270px;
+  right: 15px;
+  z-index: 100;
+  max-width: 100vw;
+  transition: left 0.5s ease;
+}
+
+.headerSectionCollapsed {
+  left: 80px;
+}
+
 .heading {
-  font-size: 1.875rem;
+  font-size: 2rem;
+  color: white;
   font-weight: bold;
-  margin-bottom: 2rem;
-  color: #ffffff;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.sessionsContainer {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .error {
   background-color: #fee2e2;
   border: 1px solid #ef4444;
   color: #dc2626;
-  padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  margin-bottom: 1rem;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-weight: 500;
 }
 
 .success {
   background-color: #dcfce7;
   border: 1px solid #22c55e;
   color: #16a34a;
-  padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  margin-bottom: 1rem;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-weight: 500;
 }
 
 .sessionsGrid {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .sessionCard {
-  background-color: #f8fafc;
+  background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  padding: 1rem;
+  border-left: 4px solid #0064B1;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sessionCard:hover {
+  background-color: #f8fbff;
+  box-shadow: 0 3px 10px rgba(0, 100, 177, 0.12);
 }
 
 .tutorName {
-  font-weight: 600;
+  font-weight: 700;
   color: #1f2937;
-  margin-bottom: 0.5rem;
+  font-size: 1.05rem;
+  margin: 0 0 8px 0;
 }
 
 .sessionCourse {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #555;
-  margin-bottom: 0.25rem;
+  margin: 0 0 6px 0;
 }
 
 .sessionTime {
   color: #4b5563;
-  margin-bottom: 0.25rem;
+  margin: 0 0 6px 0;
 }
 
 .sessionDuration {
   color: #6b7280;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  margin: 0 0 6px 0;
 }
 
 .sessionStatus {
-  color: #2563eb;
-  font-weight: 500;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
+  color: #0064B1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 8px 0 6px 0;
 }
 
 .checkInTime,
 .checkOutTime {
-  font-size: 0.8rem;
-  color: #000000; 
-  margin: 0;
+  font-size: 0.85rem;
+  color: #333;
+  margin: 4px 0 0 0;
+}
+
+.emptyCard {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
 }
 
 .noSessions {
-  color: #f3f3f3;
+  color: #6b7280;
   text-align: center;
-  padding: 1rem;
+  padding: 12px;
+  margin: 0;
 }
 
 .spinnerContainer {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  color: #333;
+  height: 400px;
 }
 
 .spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  border: 4px solid rgba(0, 123, 255, 0.3);
+  border-top: 4px solid #007bff;
   border-radius: 50%;
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;
+  margin-bottom: 10px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% { 
+    transform: rotate(0deg); 
+  }
+
+  100% { 
+    transform: rotate(360deg); 
+  }
 }
 
 @media (max-width: 768px) {
   .container {
     background: var(--main-background-mobile);
     width: 100%;
-    height: 100vh;
-  }
-  
-  .mainContent {
-    padding: 10px;
-    margin-left: 0;
-    padding-bottom: 10rem;
+    min-height: 100vh;
+    overflow-y: auto;
   }
 
-    .heading {
-    color: var(--main-title-color-mobile);
-    font-weight: var(--main-title-font-weight-mobile);
+  .mainContent,
+  .mainContentCollapsed {
+    margin-left: 0;
+    margin-top: 90px;
+    padding: 16px;
+    padding-bottom: 100px;
+    overflow-y: auto;
+  }
+
+  .headerSection,
+  .headerSectionCollapsed {
+    left: 0;
+    right: 0;
     width: 100%;
-    padding-top: 25px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
+    box-sizing: border-box;
+    background: var(--main-background-mobile);
+    border-bottom: none;
+    justify-content: center;
+    padding: 18px 20px;
+  }
+
+  .heading {
+    width: 100%;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: var(--main-title-font-weight-mobile);
+    color: var(--main-title-color-mobile);
+    padding-top: 10px;
+  }
+
+  .sessionsContainer {
+    max-width: 100%;
   }
 
   .sessionCard {
+    border-radius: 14px;
+    padding: 16px;
     box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.098);
+  }
+
+  .emptyCard {
+    border-radius: 14px;
   }
 }

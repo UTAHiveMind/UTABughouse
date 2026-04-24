@@ -2,7 +2,7 @@ html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   overflow-x: hidden;
   font-family: sans-serif;
   background: white;
@@ -11,7 +11,8 @@ html, body {
 .container {
   display: flex;
   min-height: 100vh;
-  overflow: hidden;
+  background: #f4f6f9;
+  overflow-x: hidden;
 }
 
 .mainContent {
@@ -20,9 +21,9 @@ html, body {
   flex-direction: column;
   padding: 20px;
   margin-top: 90px;
+  margin-left: 260px;
   color: #212529;
   overflow: visible;
-  margin-left: 260px;
   width: 100%;
   transition: margin-left 0.5s ease;
 }
@@ -33,6 +34,7 @@ html, body {
 
 .headerSection {
   display: flex;
+  align-items: center;
   gap: 15px;
   background: #0064B1;
   padding: 15px 25px;
@@ -40,11 +42,9 @@ html, body {
   top: 0;
   left: 270px;
   right: 15px;
-  border-bottom: #ddd;
+  z-index: 100;
   max-width: 100vw;
   transition: left 0.5s ease;
-  width: calc(100%);
-  z-index: 10;
 }
 
 .headerSectionCollapsed {
@@ -59,7 +59,131 @@ html, body {
   white-space: nowrap;
 }
 
-/* Table */
+.feedbackContainer {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+.formCard {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.select,
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: white;
+  color: #333;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  outline: none;
+}
+
+.select:focus,
+.textarea:focus {
+  border-color: #0064B1;
+  box-shadow: 0 0 0 2px rgba(0, 100, 177, 0.15);
+}
+
+.textarea {
+  min-height: 150px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.stars {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 8px 0;
+}
+
+.star {
+  color: #d1d5db;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.star:hover {
+  transform: scale(1.08);
+}
+
+.starSelected {
+  color: #ffd700;
+}
+
+.submitButton {
+  padding: 10px 16px;
+  background-color: #0064B1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  align-self: flex-start;
+}
+
+.submitButton:hover {
+  background-color: #0056b3;
+}
+
+.successMessage {
+  background-color: #dcfce7;
+  border: 1px solid #22c55e;
+  color: #16a34a;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 0 0 18px 0;
+  font-weight: 500;
+}
+
+.loadingContainer,
+.errorContainer {
+  background: white;
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.loadingContainer p {
+  color: #333;
+  margin: 0;
+}
+
+.errorContainer {
+  border: 1px solid #ef4444;
+  background-color: #fee2e2;
+}
+
+.errorContainer p {
+  color: #dc2626;
+  margin: 0;
+  font-weight: 500;
+}
+
 .reviewTable {
   width: 100%;
   border-collapse: collapse;
@@ -162,40 +286,64 @@ html, body {
 @media (max-width: 768px) {
   .container {
     background: var(--main-background-mobile);
-    overflow-y: auto;
-  }
-
-  .mainContent {
-    margin-left: 0;
-    padding-bottom: 90px;
+    width: 100%;
+    min-height: 100vh;
     overflow-y: auto;
   }
 
   .mainContent,
   .mainContentCollapsed {
     margin-left: 0;
+    margin-top: 90px;
+    padding: 16px;
+    padding-bottom: 100px;
+    overflow-y: auto;
   }
 
-  .headerSection {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+  .headerSection,
+  .headerSectionCollapsed {
+    left: 0;
+    right: 0;
+    width: 100%;
+    box-sizing: border-box;
     background: var(--main-background-mobile);
     border-bottom: none;
-    left: 0;
-    width: calc(100%);
+    justify-content: center;
+    padding: 18px 20px;
   }
 
   .heading {
-    display: flex;
-    flex-direction: column;
     width: 100%;
-    align-items: center;
+    text-align: center;
     font-size: 2rem;
-    margin: 0;
     font-weight: var(--main-title-font-weight-mobile);
     color: var(--main-title-color-mobile);
-    padding-top: 25px;
+    padding-top: 10px;
+  }
+
+  .feedbackContainer {
+    max-width: 100%;
+  }
+
+  .formCard,
+  .loadingContainer,
+  .errorContainer {
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .submitButton {
+    width: 100%;
+    border-radius: 10px;
+    padding: 10px 16px;
+  }
+
+  .stars {
+    justify-content: center;
+  }
+
+  .star {
+    font-size: 2.2rem;
   }
 
   .reviewTable thead {

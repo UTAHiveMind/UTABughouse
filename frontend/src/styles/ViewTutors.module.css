@@ -1,128 +1,85 @@
-.App{
-  background-color:#eeee;
-  height: 100vh;
-  width: 100vw;
-}
-
-.search-bar-container{
-  padding-top:20vh;
-  width:40%;
-  margin-left:8px;
-  margin-right:8px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  min-width:200px;
-}
-
 .container {
   display: flex;
-  min-height: 100vh; /* Full viewport height */
+  min-height: 100vh;
+  background: #f4f6f9;
+  overflow-x: hidden;
 }
 
 .mainContent {
   flex: 1;
-  /*original:
-  padding: 20px;*/
-  margin-left :80px;/*accounts for sidebar when its minimized*/
-  padding: 12px;
-  color: black;
-  margin-left: 290px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  margin-top: 90px;
+  margin-left: 260px;
+  width: 100%;
   transition: margin-left 0.5s ease;
 }
 
 .mainContentCollapsed {
-  margin-left: 100px;
+  margin-left: 80px;
 }
 
-.searchInfoContent{
-  flex: 1;
-  padding: 15px 20px 0px;
+/* HEADER */
+.headerSection {
+  display: flex;
+  align-items: center;
+  background: #0064B1;
+  padding: 15px 25px;
+  position: fixed;
+  top: 0;
+  left: 270px;
+  right: 15px;
+  z-index: 100;
+  transition: left 0.5s ease;
+}
+
+.headerSectionCollapsed {
+  left: 80px;
 }
 
 .heading {
   font-size: 2rem;
-  color: #ffffff;
-  margin-bottom: 20px;
-  padding-left: 8px;
-  padding-top: 8px;
-  padding-right: 8px;
-}
-
-.cardContainer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.userTable {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.userTable th,
-.userTable td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-
-.userTable th {
-  background-color: #f2f2f2;
+  color: white;
   font-weight: bold;
+  margin: 0;
 }
 
-.userTable tr:hover {
-  background-color: #f9f9f9;
+/* PAGE */
+.pageContent {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.searchText{
-  font-size: 1rem;
-  color: #ffffff;
-  text-align: justify;
+/* SEARCH CARD */
+.searchCard {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-.searchDefaultText{
-  font-size: 1.5rem;
-  color: #ffffff;
-  text-align: justify;
-  padding-left: 5px;
+.searchBarContainer {
+  margin-bottom: 15px;
 }
 
-.noTutors{
-  color: #ffffff;
+/* RESULTS */
+.resultsCard {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-.searchInfo{
-  display:flex;
-  flex-direction:row;
-  justify-content: space-between;
-}
-
-.returnButton{
-    border-radius: 5px;
-    background-color: #0064b1;
-    padding: 2px 2px;
-    width: 170px;
-    color: #e6ebee;
-    border: none;
-}
-
-.returnButton:hover {
-  transform: scale(1.03);
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
+/* SPINNER */
 .spinnerContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 500px;
-  padding-left: 0px;
-  color: white;
+  height: 400px;
 }
 
 .spinner {
@@ -136,64 +93,34 @@
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* MOBILE */
 @media (max-width: 768px) {
-  .App {
-    background-color: black;
-
-  }
-
-  .searchBarContainer {
-    border: 1px solid rgba(128, 128, 128, 0.328);
-    border-radius: 8px;
-    /* background-color: black; */
-  }
-  
   .container {
     background: var(--main-background-mobile);
-    width: 100%;
-    height: 100vh;
   }
 
   .mainContent {
     margin-left: 0;
-    padding: 5px;
-    width: 100%;
-    overflow-y: auto;
-    
+    padding: 10px;
   }
 
-    .heading {
+  .headerSection {
+    left: 0;
+    right: 0;
+    background: var(--main-background-mobile);
+  }
+
+  .heading {
+    text-align: center;
     color: var(--main-title-color-mobile);
-    font-weight: var(--main-title-font-weight-mobile);
-    width: 100%;
-    padding-top: 25px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
   }
 
+  .searchCard,
+  .resultsCard {
+    border-radius: 14px;
+  }
 }

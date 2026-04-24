@@ -5,12 +5,10 @@ import StudentSidebar from '../../components/Sidebar/StudentSidebar';
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
 import { useLocation } from 'react-router-dom';
 
-// Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
 const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || 'localhost';
 const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || '4000';
 
-// Construct the backend URL dynamically
 const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
 
 function StudentSchedule() {
@@ -19,7 +17,7 @@ function StudentSchedule() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTutor, setSelectedTutor] = useState('');
   const [selectedTutorInfo, setSelectedTutorInfo] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState('')
+  const [selectedCourse, setSelectedCourse] = useState('');
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [selectedTime, setSelectedTime] = useState('');
   const [loading, setLoading] = useState(true);
@@ -30,8 +28,6 @@ function StudentSchedule() {
   const [specialRequest, setSpecialRequest] = useState('');
   const [userData, setUserData] = useState(null);
   const location = useLocation();
-
-
 
   useEffect(() => {
     const fetchUserSession = async () => {
@@ -60,7 +56,6 @@ function StudentSchedule() {
     fetchUserSession();
   }, []);
 
-  //should hit a backend endpoint to fetch just upcoming sessions instead
   const fetchUpcomingSessions = useCallback(async () => {
     if (!userData || !userData.id) return;
 
@@ -128,7 +123,7 @@ function StudentSchedule() {
       fetchTutors();
       fetchUpcomingSessions();
     }
-  }, [userData, fetchUpcomingSessions]);
+  }, [userData, fetchUpcomingSessions, location.state?.tutorId]);
 
   useEffect(() => {
     fetchAvailableTimeSlots();
@@ -145,19 +140,18 @@ function StudentSchedule() {
     setSelectedTutor(newTutor);
     setSelectedTime('');
 
-    //new code
     const tutor = tutors.find(t => t._id === newTutor);
     setSelectedTutorInfo(tutor || null);
   };
 
   const sendNotification = async (id) => {
-    const {data} = await axios.post(`${BACKEND_URL}/api/notifications/send-notification`, {
+    const { data } = await axios.post(`${BACKEND_URL}/api/notifications/send-notification`, {
       sessionId: id
     }, {
       withCredentials: true
     });
     return data;
-  }
+  };
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -194,6 +188,8 @@ function StudentSchedule() {
         fetchUpcomingSessions();
         setSelectedDate('');
         setSelectedTutor('');
+        setSelectedTutorInfo(null);
+        setSelectedCourse('');
         setSelectedTime('');
         setSpecialRequest('');
         setAvailableTimeSlots([]);
@@ -207,7 +203,6 @@ function StudentSchedule() {
     }
   };
 
-  // Function to handle session cancellation
   const handleCancelSession = async (sessionId, newstatus) => {
     if (!window.confirm('Are you sure you want to cancel this session?')) return;
     setError('');
@@ -219,9 +214,7 @@ function StudentSchedule() {
         { withCredentials: true }
       );
 
-      // Check for success
       if (response.data.success) {
-        // Update the upcoming sessions list
         fetchUpcomingSessions();
         setSuccessMessage('Session cancelled successfully!');
         setTimeout(() => {
@@ -263,6 +256,9 @@ function StudentSchedule() {
       <div className={styles.container}>
         <StudentSidebar selected="student-schedule" />
         <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
+          <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+            <h1 className={styles.heading}>Schedule a Session</h1>
+          </div>
           <div className={styles.spinnerContainer}>
             <div className={styles.spinner}></div>
             <p>Loading...</p>
@@ -277,6 +273,9 @@ function StudentSchedule() {
       <div className={styles.container}>
         <StudentSidebar selected="student-schedule" />
         <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
+          <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+            <h1 className={styles.heading}>Schedule a Session</h1>
+          </div>
           <div className={styles.error}>
             Session expired or not found. Please log in again.
           </div>
@@ -288,10 +287,13 @@ function StudentSchedule() {
   return (
     <div className={styles.container}>
       <StudentSidebar selected="student-schedule" />
-      <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
-        <div className={styles.scheduleContainer}>
-          <h1 className={styles.heading}>Schedule a Session</h1>
 
+      <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
+        <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+          <h1 className={styles.heading}>Schedule a Session</h1>
+        </div>
+
+        <div className={styles.scheduleContainer}>
           {error && <div className={styles.error}>{error}</div>}
           {successMessage && <div className={styles.success}>{successMessage}</div>}
 
@@ -299,6 +301,7 @@ function StudentSchedule() {
             <div className={styles.bookingForm}>
               <div className={styles.card}>
                 <h2 className={styles.cardTitle}>New Booking</h2>
+
                 <form onSubmit={handleBooking} className={styles.form}>
                   <div className={styles.formGroup}>
                     <label htmlFor="tutor">Select Tutor</label>
@@ -317,10 +320,12 @@ function StudentSchedule() {
                       ))}
                     </select>
                   </div>
+
                   {selectedTutorInfo && (
                     <div className={styles.tutorCourses}>
                       <label htmlFor="courses">Select Course</label>
                       <select
+                        id="courses"
                         className={styles.formSelect}
                         value={selectedCourse}
                         onChange={(e) => setSelectedCourse(e.target.value)}
@@ -333,8 +338,9 @@ function StudentSchedule() {
                           </option>
                         ))}
                       </select>
+
                       {!selectedTutorInfo?.courses?.length && (
-                        <p style={{ fontSize: "0.85rem", color: "gray", marginTop: "5px" }}>
+                        <p className={styles.helperText}>
                           Tutor doesn't teach any courses as of now!
                         </p>
                       )}
@@ -399,6 +405,7 @@ function StudentSchedule() {
             <div className={styles.upcomingSessions}>
               <div className={styles.card}>
                 <h2 className={styles.cardTitle}>Upcoming Sessions</h2>
+
                 <div className={styles.sessionsGrid}>
                   {upcomingSessions.length > 0 ? (
                     upcomingSessions.map((session) => (
@@ -406,20 +413,25 @@ function StudentSchedule() {
                         <p className={styles.tutorName}>
                           {session.tutorID.firstName} {session.tutorID.lastName}
                         </p>
+
                         {session.courseID && (
                           <p className={styles.sessionCourse}>
                             Course: {session.courseID.code} - {session.courseID.title}
                           </p>
                         )}
+
                         <p className={styles.sessionTime}>
                           {formatDateTime(session.sessionTime)}
                         </p>
+
                         <p className={styles.sessionDuration}>
                           Duration: {session.duration} minutes
                         </p>
+
                         <p className={styles.sessionStatus}>
                           Status: {session.status}
                         </p>
+
                         <button
                           className={styles.cancelButton}
                           onClick={() => {

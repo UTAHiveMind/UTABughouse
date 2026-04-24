@@ -2,16 +2,16 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import styles from "../../styles/Feedback.module.css";
 import StudentSidebar from "../../components/Sidebar/StudentSidebar";
+import { useSidebar } from "../../components/Sidebar/SidebarContext";
 
-// Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
 const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || 'localhost';
 const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || '4000';
 
-// Construct the backend URL dynamically
 const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
 
 function Feedback() {
+  const { isCollapsed } = useSidebar();
   const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTutor, setSelectedTutor] = useState("");
@@ -21,7 +21,6 @@ function Feedback() {
   const [userData, setUserData] = useState(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   
-  // Fetch the user session data
   useEffect(() => {
     const fetchUserSession = async () => {
       try {
@@ -44,9 +43,7 @@ function Feedback() {
     fetchUserSession();
   }, []);
 
-  // Fetch tutors data
   useEffect(() => {
-    // Fetch tutors from the backend
     axios
       .get(`${BACKEND_URL}/api/users`, {
         withCredentials: true
@@ -65,6 +62,7 @@ function Feedback() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     if (!userData || !userData.id) {
       alert("User session not found. Please log in again.");
       return;
@@ -72,7 +70,6 @@ function Feedback() {
     
     const studentId = userData.id;
 
-    // Validate inputs
     if (!selectedTutor) {
       alert("Please select a tutor.");
       return;
@@ -95,7 +92,7 @@ function Feedback() {
         feedbackText: feedback,
         rating,
       }, {
-        withCredentials: true // Include cookies for session authentication
+        withCredentials: true
       })
       .then((response) => {
         setSuccessMessage("Thank you, your feedback was received!");
@@ -103,7 +100,6 @@ function Feedback() {
         setFeedback("");
         setRating(0);
 
-        // Clear the success message after a few seconds
         setTimeout(() => {
           setSuccessMessage("");
         }, 5000);
@@ -111,7 +107,6 @@ function Feedback() {
       .catch((error) => {
         console.error("Detailed error submitting feedback:", error.response);
 
-        // More informative error handling
         const errorMessage =
           error.response?.data?.message ||
           error.message ||
@@ -121,30 +116,40 @@ function Feedback() {
       });
   };
 
-  // Show loading state if either session or tutors are still loading
   if (sessionLoading || loading) {
     return (
       <div className={styles.container}>
-        <StudentSidebar selected="feedback"></StudentSidebar>
-        <div className={styles.mainContent}>
-          <h1 className={styles.heading}>Give Feedback</h1>
-          <div className={styles.loadingContainer}>
-            <p>Loading...</p>
+        <StudentSidebar selected="feedback" />
+
+        <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
+          <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+            <h1 className={styles.heading}>Give Feedback</h1>
+          </div>
+
+          <div className={styles.feedbackContainer}>
+            <div className={styles.loadingContainer}>
+              <p>Loading...</p>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // Show error if no user session is found
   if (!userData) {
     return (
       <div className={styles.container}>
-        <StudentSidebar selected="feedback"></StudentSidebar>
-        <div className={styles.mainContent}>
-          <h1 className={styles.heading}>Give Feedback</h1>
-          <div className={styles.errorContainer}>
-            <p>Session expired or not found. Please log in again.</p>
+        <StudentSidebar selected="feedback" />
+
+        <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
+          <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+            <h1 className={styles.heading}>Give Feedback</h1>
+          </div>
+
+          <div className={styles.feedbackContainer}>
+            <div className={styles.errorContainer}>
+              <p>Session expired or not found. Please log in again.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -153,62 +158,74 @@ function Feedback() {
 
   return (
     <div className={styles.container}>
-      <StudentSidebar selected="feedback"></StudentSidebar>
-      <div className={styles.mainContent}>
-        <h1 className={styles.heading}>Give Feedback</h1>
-        {successMessage && (
-          <p className={styles.successMessage}>{successMessage}</p>
-        )}
-        <form onSubmit={handleSubmit}>
-          <label className={styles.label} htmlFor="tutor">
-            Select Tutor
-          </label>
-          <select
-            id="tutor"
-            className={styles.select}
-            value={selectedTutor}
-            onChange={(e) => setSelectedTutor(e.target.value)}
-          >
-            <option value="">-- Choose a Tutor --</option>
-            {tutors.map((tutor) => (
-              <option key={tutor._id} value={tutor._id}>
-                {tutor.firstName} {tutor.lastName}
-              </option>
-            ))}
-          </select>
+      <StudentSidebar selected="feedback" />
 
-          <label className={styles.label} htmlFor="feedback">
-            Feedback
-          </label>
-          <textarea
-            id="feedback"
-            className={styles.textarea}
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Write your feedback here"
-          />
+      <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
+        <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+          <h1 className={styles.heading}>Give Feedback</h1>
+        </div>
 
-          <label className={styles.label} htmlFor="rating">
-            Rating
-          </label>
-          <div className={styles.stars}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <span
-                key={star}
-                className={`${styles.star} ${
-                  rating >= star ? styles.starSelected : ""
-                }`}
-                onClick={() => setRating(star)}
+        <div className={styles.feedbackContainer}>
+          <div className={styles.formCard}>
+            {successMessage && (
+              <p className={styles.successMessage}>{successMessage}</p>
+            )}
+
+            <form onSubmit={handleSubmit} className={styles.form}>
+              <label className={styles.label} htmlFor="tutor">
+                Select Tutor
+              </label>
+
+              <select
+                id="tutor"
+                className={styles.select}
+                value={selectedTutor}
+                onChange={(e) => setSelectedTutor(e.target.value)}
               >
-                ★
-              </span>
-            ))}
-          </div>
+                <option value="">-- Choose a Tutor --</option>
+                {tutors.map((tutor) => (
+                  <option key={tutor._id} value={tutor._id}>
+                    {tutor.firstName} {tutor.lastName}
+                  </option>
+                ))}
+              </select>
 
-          <button type="submit" className={styles.submitButton}>
-            Submit Feedback
-          </button>
-        </form>
+              <label className={styles.label} htmlFor="feedback">
+                Feedback
+              </label>
+
+              <textarea
+                id="feedback"
+                className={styles.textarea}
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Write your feedback here"
+              />
+
+              <label className={styles.label} htmlFor="rating">
+                Rating
+              </label>
+
+              <div className={styles.stars}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <span
+                    key={star}
+                    className={`${styles.star} ${
+                      rating >= star ? styles.starSelected : ""
+                    }`}
+                    onClick={() => setRating(star)}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+
+              <button type="submit" className={styles.submitButton}>
+                Submit Feedback
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );

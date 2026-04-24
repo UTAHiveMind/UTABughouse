@@ -4,7 +4,6 @@ import styles from "../../styles/MySessions.module.css";
 import StudentSidebar from "../../components/Sidebar/StudentSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
 
-// Get config from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
 const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || 'localhost';
 const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || '4000';
@@ -19,7 +18,6 @@ function MySessions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Format date/time nicely
   const formatDateTime = (dateTime) => {
     const date = new Date(dateTime);
     return date.toLocaleString("en-US", {
@@ -28,7 +26,6 @@ function MySessions() {
     });
   };
 
-  // Fetch session data from backend
   const fetchSessions = useCallback(async () => {
     if (!userData || !userData.id) return;
 
@@ -45,7 +42,6 @@ function MySessions() {
     }
   }, [userData]);
 
-  // Fetch attendance records
   const fetchAttendance = useCallback(async () => {
     if (!userData || !userData.id) return;
 
@@ -60,7 +56,6 @@ function MySessions() {
     }
   }, [userData]);
 
-  // Get user session on mount
   useEffect(() => {
     const fetchUserSession = async () => {
       try {
@@ -84,7 +79,6 @@ function MySessions() {
     fetchUserSession();
   }, []);
 
-  // Fetch sessions & attendance once user data is available
   useEffect(() => {
     if (userData) {
       fetchSessions();
@@ -95,75 +89,82 @@ function MySessions() {
   return (
     <div className={styles.container}>
       <StudentSidebar selected="my-sessions" />
+
       <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
-        <h1 className={styles.heading}>My Sessions</h1>
+        <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
+          <h1 className={styles.heading}>My Sessions</h1>
+        </div>
 
-        {loading ? (
-          <div className={styles.spinnerContainer}>
-            <div className={styles.spinner}></div>
-            <p>Loading sessions...</p>
-          </div>
-        ) : error ? (
-          <div className={styles.error}>{error}</div>
-        ) : sessions.length === 0 ? (
-          <p className={styles.noSessions}>You have no sessions booked.</p>
-        ) : (
-          <div className={styles.sessionsGrid}>
-            {sessions.map((session) => {
-              const attendanceForSession = attendance.find(
-                (record) => record.sessionID?._id === session._id
-              );
+        <div className={styles.sessionsContainer}>
+          {loading ? (
+            <div className={styles.spinnerContainer}>
+              <div className={styles.spinner}></div>
+              <p>Loading sessions...</p>
+            </div>
+          ) : error ? (
+            <div className={styles.error}>{error}</div>
+          ) : sessions.length === 0 ? (
+            <div className={styles.emptyCard}>
+              <p className={styles.noSessions}>You have no sessions booked.</p>
+            </div>
+          ) : (
+            <div className={styles.sessionsGrid}>
+              {sessions.map((session) => {
+                const attendanceForSession = attendance.find(
+                  (record) => record.sessionID?._id === session._id
+                );
 
-              let displayStatus = session.status;
+                let displayStatus = session.status;
 
-              if (session.status === 'Scheduled') {
-                if (attendanceForSession?.checkInTime && !attendanceForSession?.checkOutTime) {
-                  displayStatus = 'Ongoing';
-                } else if (attendanceForSession?.checkInTime && attendanceForSession?.checkOutTime) {
-                  displayStatus = 'Completed';
+                if (session.status === 'Scheduled') {
+                  if (attendanceForSession?.checkInTime && !attendanceForSession?.checkOutTime) {
+                    displayStatus = 'Ongoing';
+                  } else if (attendanceForSession?.checkInTime && attendanceForSession?.checkOutTime) {
+                    displayStatus = 'Completed';
+                  }
                 }
-              }
 
-              return (
-                <div key={session._id} className={styles.sessionCard}>
-                  <p className={styles.tutorName}>
-                    {session.tutorID?.firstName} {session.tutorID?.lastName}
-                  </p>
-
-                  {session.courseID && (
-                    <p className={styles.sessionCourse}>
-                      Course: {session.courseID.code} - {session.courseID.title}
+                return (
+                  <div key={session._id} className={styles.sessionCard}>
+                    <p className={styles.tutorName}>
+                      {session.tutorID?.firstName} {session.tutorID?.lastName}
                     </p>
-                  )}
 
-                  <p className={styles.sessionTime}>
-                    {formatDateTime(session.sessionTime)}
-                  </p>
+                    {session.courseID && (
+                      <p className={styles.sessionCourse}>
+                        Course: {session.courseID.code} - {session.courseID.title}
+                      </p>
+                    )}
 
-                  <p className={styles.sessionDuration}>
-                    Duration: {session.duration} minutes
-                  </p>
+                    <p className={styles.sessionTime}>
+                      {formatDateTime(session.sessionTime)}
+                    </p>
 
-                  <p className={styles.sessionStatus}>
-                    Status: {displayStatus}
-                  </p>
+                    <p className={styles.sessionDuration}>
+                      Duration: {session.duration} minutes
+                    </p>
 
-                {attendanceForSession?.checkInTime && (
-                  <p className={styles.checkInTime}>
-                    Checked in: {formatDateTime(attendanceForSession.checkInTime)}
-                  </p>
-                )}
-                {attendanceForSession?.checkOutTime && (
-                  <p className={styles.checkOutTime}>
-                    Checked out: {formatDateTime(attendanceForSession.checkOutTime)}
-                  </p>
-                )}
-                </div>
-              );
-            })}
+                    <p className={styles.sessionStatus}>
+                      Status: {displayStatus}
+                    </p>
 
-          </div>
-        )}
+                    {attendanceForSession?.checkInTime && (
+                      <p className={styles.checkInTime}>
+                        Checked in: {formatDateTime(attendanceForSession.checkInTime)}
+                      </p>
+                    )}
+
+                    {attendanceForSession?.checkOutTime && (
+                      <p className={styles.checkOutTime}>
+                        Checked out: {formatDateTime(attendanceForSession.checkOutTime)}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
