@@ -4,25 +4,20 @@ import { useNavigate } from "react-router-dom";
 import styles from "../../styles/SystemAnalytics.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
-import { FaFileCsv } from 'react-icons/fa';
+import { FaFileCsv } from "react-icons/fa";
 
-// Get configuration from environment variables
-const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
-const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || 'localhost';
-const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || '4000';
-
-// Construct the backend URL dynamically
+const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
+const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || "localhost";
+const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || "4000";
 const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
 
-// Inline default avatar as base64 to avoid HTTP requests
-const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cmVjdCBmaWxsPSIjZTllOWU5IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIvPjxjaXJjbGUgY3g9IjEyOCIgY3k9Ijk2IiByPSI0MCIgZmlsbD0iIzU5NjI3NCIvPjxwYXRoIGZpbGw9IiM1OTYyNzQiIGQ9Ik0yMTYsMTk2Yy0wLjQtMzcuOC0zMi43LTY4LTcyLTY4aC0zMmMtMzkuMywwLTcxLjYsMzAuMi03Miw2OEgyMTZ6Ii8+PC9zdmc+";
+const DEFAULT_AVATAR =
+  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cmVjdCBmaWxsPSIjZTllOWU5IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIvPjxjaXJjbGUgY3g9IjEyOCIgY3k9Ijk2IiByPSI0MCIgZmlsbD0iIzU5NjI3NCIvPjxwYXRoIGZpbGw9IiM1OTYyNzQiIGQ9Ik0yMTYsMTk2Yy0wLjQtMzcuOC0zMi43LTY4LTcyLTY4aC0zMmMtMzkuMywwLTcxLjYsMzAuMi03Miw2OEgyMTZ6Ii8+PC9zdmc+";
 
-// Create a cache object to store the analytics data
-// This will persist between renders but will be reset when the page is refreshed
 const analyticsCache = {
   data: null,
   timestamp: null,
-  cacheDuration: 5 * 60 * 1000 // 5 minutes in milliseconds
+  cacheDuration: 5 * 60 * 1000,
 };
 
 function SystemAnalytics() {
@@ -32,44 +27,41 @@ function SystemAnalytics() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const { isCollapsed } = useSidebar();
 
-  // Date range filter state (from input type='date')
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  //Convert "yyyy-mm-dd" string from input into local Date object
+
+  const navigate = useNavigate();
+
   const parseLocalDate = (dateStr) => {
     if (!dateStr) return null;
     const [year, month, day] = dateStr.split("-").map(Number);
     return new Date(year, month - 1, day);
   };
-  //Parse selected date range
+
   const start = parseLocalDate(fromDate);
   const end = parseLocalDate(toDate);
 
-  //Set end date to end of the day
   if (end) {
     end.setHours(23, 59, 59, 999);
   }
-  
-  // Initialize navigate for routing
-  const navigate = useNavigate();
-  
-  // Define fetchTutors as a useCallback so we can use it both in useEffect and the refresh button
+
   const fetchTutors = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Check if we have valid cached data
-      const now = new Date();
 
+      const now = new Date();
       const hasDateFilter = Boolean(fromDate || toDate);
-      //This for DEBUG: to see why it is caching
-      console.log("fetch triggered. Filter active:", hasDateFilter, "Dates:", {fromDate, toDate});
-      //Otherwise, only hit cache if there NO Date Filter
+
+      console.log("fetch triggered. Filter active:", hasDateFilter, "Dates:", {
+        fromDate,
+        toDate,
+      });
+
       if (
         !hasDateFilter &&
-        analyticsCache.data && 
-        analyticsCache.timestamp && 
-        (Date.now() - analyticsCache.timestamp < analyticsCache.cacheDuration)
+        analyticsCache.data &&
+        analyticsCache.timestamp &&
+        Date.now() - analyticsCache.timestamp < analyticsCache.cacheDuration
       ) {
         console.log("Using cached tutor analytics data");
         setTutors(analyticsCache.data);
@@ -77,21 +69,21 @@ function SystemAnalytics() {
         setLoading(false);
         return;
       }
-      
+
       console.log("Fetching fresh tutor analytics data...");
 
       const params = {};
-      //Handle fromDate by default 1 year ago
+
       if (fromDate) {
         params.fromDate = new Date(fromDate).toISOString();
       } else {
         const past = new Date();
-        past.setFullYear(past.getFullYear() - 1); //E.g. setFullYear(2026 - 1)
-        params.fromDate = past.toISOString();     //Prevent timezone error to match with $lte and $gte from backend
+        past.setFullYear(past.getFullYear() - 1);
+        params.fromDate = past.toISOString();
       }
-      //Handle toDate by default tomorrow
+
       if (toDate) {
-        const endOfDay = new Date(toDate);  //Set to end of day to unclude today's records
+        const endOfDay = new Date(toDate);
         endOfDay.setHours(23, 59, 59, 999);
         params.toDate = endOfDay.toISOString();
       } else {
@@ -100,35 +92,29 @@ function SystemAnalytics() {
         params.toDate = tomorrow.toISOString();
       }
 
-      // const hasDateFilterValue = fromDate || toDate;
-      const endpoint = hasDateFilter ? `${BACKEND_URL}/api/users/fromDtoD` : `${BACKEND_URL}/api/users/tutors`;
-      
-      // Step 1: Fetch all tutors from users API
-      // const tutorsResponse = await axios.get(`${BACKEND_URL}/api/users/tutors`);
+      const endpoint = hasDateFilter
+        ? `${BACKEND_URL}/api/users/fromDtoD`
+        : `${BACKEND_URL}/api/users/tutors`;
+
       const tutorsResponse = await axios.get(endpoint, { params });
       const tutorsList = tutorsResponse.data;
+
       console.log(`Fetched ${tutorsList.length} tutors from users API`);
-      
-      // Step 2: Fetch tutor profiles for profile pictures
+
       const tutorData = await Promise.all(
         tutorsList.map(async (tutor) => {
           try {
-            // Get profile picture if available
-            const profileResponse = await axios.get(`${BACKEND_URL}/api/profile/${tutor._id}`);
+            const profileResponse = await axios.get(
+              `${BACKEND_URL}/api/profile/${tutor._id}`
+            );
+
             const profile = profileResponse.data;
-            
-            // Get session count (completed or scheduled sessions)
-            const sessionsResponse = await axios.get(`${BACKEND_URL}/api/sessions?tutorID=${tutor._id}`);
-            const totalSessions = tutor.totalSessions;
-            
-            // Calculate average rating from feedback
-            let avgRating = tutor.avgRating || 0;
-            
+
             return {
               id: tutor._id,
               name: `${tutor.firstName} ${tutor.lastName}`,
               profilePic: profile?.profilePicture || DEFAULT_AVATAR,
-              avgRating: avgRating,
+              avgRating: tutor.avgRating || 0,
               totalSessions: tutor.totalSessions,
               totalCompleted: tutor.totalCompleted,
               totalCancelled: tutor.totalCancelled,
@@ -136,97 +122,95 @@ function SystemAnalytics() {
               totalCompletedHours: tutor.totalCompletedHours,
             };
           } catch (error) {
-            console.log(`Error fetching details for tutor ${tutor._id}:`, error.message);
-            // Return basic info if additional data fetching fails
+            console.log(
+              `Error fetching details for tutor ${tutor._id}:`,
+              error.message
+            );
+
             return {
               id: tutor._id,
               name: `${tutor.firstName} ${tutor.lastName}`,
               profilePic: DEFAULT_AVATAR,
               avgRating: tutor.rating || 0,
-              totalSessions: 0
+              totalSessions: 0,
             };
           }
         })
       );
-      
-      // Update the cache with the new data
+
       analyticsCache.data = tutorData;
       analyticsCache.timestamp = now.getTime();
-      
+
       setTutors(tutorData);
       setLastUpdated(now);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching tutor analytics:", error);
-      const errorMessage = error.response 
-        ? `Error: ${error.response.status} - ${error.response.data?.message || error.response.statusText}` 
+
+      const errorMessage = error.response
+        ? `Error: ${error.response.status} - ${
+            error.response.data?.message || error.response.statusText
+          }`
         : "Failed to connect to the server. Please try again later.";
+
       console.log("Using local fallback data while API is unavailable");
-      
-      // Fallback to local data
+
       setTutors([
         {
           id: 1,
           name: "Jane Smith",
           profilePic: DEFAULT_AVATAR,
           avgRating: 4.8,
-          totalSessions: 24
+          totalSessions: 24,
         },
         {
           id: 2,
           name: "John Doe",
           profilePic: DEFAULT_AVATAR,
           avgRating: 4.5,
-          totalSessions: 18
+          totalSessions: 18,
         },
         {
           id: 3,
           name: "Sarah Johnson",
           profilePic: DEFAULT_AVATAR,
           avgRating: 0,
-          totalSessions: 3
-        }
+          totalSessions: 3,
+        },
       ]);
+
       setError(`${errorMessage} (Using sample data for display purposes)`);
       setLoading(false);
     }
-  }, [fromDate, toDate, BACKEND_URL]);
+  }, [fromDate, toDate]);
 
-  // Fetch tutors data from API on component mount
   useEffect(() => {
     fetchTutors();
   }, [fetchTutors]);
 
-  // Function to manually refresh the data
   const handleRefresh = () => {
-    // Clear the cache and re-fetch
     analyticsCache.data = null;
     analyticsCache.timestamp = null;
     fetchTutors();
   };
 
-  // Handle click on a tutor row to navigate to detail page
   const handleTutorClick = (tutorId) => {
     navigate(`/tutor/${tutorId}`);
   };
 
+  function csvCellEscape(value) {
+    if (value == null || value === undefined) return "";
 
-  // Function to handle escape each CSV cell
-function csvCellEscape (value) {
-  if (value == null || value == undefined) return "";
+    const str = String(value);
 
-  const str = String(value);
-  //the cell value should be wrapped by "" if they contain any characters below
-  if (/[",\n\r]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
+    if (/[",\n\r]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+
+    return str;
   }
 
-  return str;
-}
-
-//Function build the csv content from database
-function buildCsvContent(data, start, end) {
-    //Headers of columns
+  function buildCsvContent(data, start, end) {
     const headers = [
       "Tutor Name",
       "Total Session",
@@ -234,116 +218,118 @@ function buildCsvContent(data, start, end) {
       "Cancelled",
       "Average Rating",
       "Total Hours",
-      "Total Minutes"
+      "Total Minutes",
     ];
 
-  const rows = data.map(r => {
-    //Combine start and end time
-    const sessionTime = `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
-    //If no show or the session status is cancelled -> the duration is 0
-    const realDuration = r.wasNoShow || r.status === "Cancelled" ? 0 : r.duration;
-    return [
-      r.name,
-      r.totalSessions,
-      r.totalCompleted,
-      r.totalCancelled,
-      r.avgRating,
-      r.totalCompletedHours,
-      r.totalCompletedMinutes
-    ].map(csvCellEscape).join(','); //Escape each cell to match the CSV format
-  });
+    const rows = data.map((r) => {
+      return [
+        r.name,
+        r.totalSessions,
+        r.totalCompleted,
+        r.totalCancelled,
+        r.avgRating,
+        r.totalCompletedHours,
+        r.totalCompletedMinutes,
+      ]
+        .map(csvCellEscape)
+        .join(",");
+    });
 
-  //join headers and all rows to be a complete csv
-  return headers.join(',') + "\n" + rows.join('\n');
-}
+    return headers.join(",") + "\n" + rows.join("\n");
+  }
 
-//Function handle csv file export
-const handleExport = () => {
-  const now = new Date(); //Initiate the current time to name the dowload file
-  const today = String(now.getDate()).padStart(2, "0");
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const year = String(now.getFullYear());
-  //Create file name as format: attendance_report_MM_DD_YYYY.csv
-  const fileName = `tutor_performance_report_${month}_${today}_${year}.csv`;
+  const handleExport = () => {
+    const now = new Date();
+    const today = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = String(now.getFullYear());
+    const fileName = `tutor_performance_report_${month}_${today}_${year}.csv`;
 
-  //Building the csv content from database by call buildCsvContent function
-  const csvContent = buildCsvContent(tutors, start, end);
+    const csvContent = buildCsvContent(tutors, start, end);
 
-  //Initiate the Blob
-  const blob = new Blob (["\ufeff", csvContent], {type: 'text/csv; charset=utf-8;'});
-  const urlTemp = URL.createObjectURL(blob);  //Create temporary link
+    const blob = new Blob(["\ufeff", csvContent], {
+      type: "text/csv; charset=utf-8;",
+    });
 
-  const link = document.createElement('a'); //Create anchor tag to trigger download
-  link.setAttribute('href', urlTemp);
-  link.setAttribute('download', fileName);
+    const urlTemp = URL.createObjectURL(blob);
+    const link = document.createElement("a");
 
-  link.style.visibility = 'hidden';
+    link.setAttribute("href", urlTemp);
+    link.setAttribute("download", fileName);
+    link.style.visibility = "hidden";
 
-  //Add to DOM -> click -> remove it
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  //Free the memory
-  URL.revokeObjectURL(urlTemp);
-}
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
+    URL.revokeObjectURL(urlTemp);
+  };
 
-  
-
-  // Format the last updated time
   const formatLastUpdated = (date) => {
     if (!date) return "";
-    
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-      hour12: true
+
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      hour12: true,
     }).format(date);
   };
 
   return (
     <div className={styles.container}>
-      <AdminSideBar selected="analytics"></AdminSideBar>
+      <AdminSideBar selected="analytics" />
+
       <div className={`${styles.mainContent} ${isCollapsed ? styles.mainContentCollapsed : ""}`}>
-        <div className={styles.headerContainer}>
+        <div className={`${styles.headerSection} ${isCollapsed ? styles.headerSectionCollapsed : ""}`}>
           <h1 className={styles.heading}>System Analytics</h1>
-          
+
           {lastUpdated && (
             <div className={styles.refreshContainer}>
               <span className={styles.lastUpdated}>
                 Last updated: {formatLastUpdated(lastUpdated)}
               </span>
-              <button 
+
+              <button
                 className={styles.refreshButton}
                 onClick={handleRefresh}
                 disabled={loading}
               >
                 {loading ? "Refreshing..." : "Refresh Data"}
               </button>
-              <button 
-                className={styles.csvButton}
-                onClick={handleExport}>
+
+              <button className={styles.csvButton} onClick={handleExport}>
                 <FaFileCsv /> Export CSV
               </button>
             </div>
           )}
         </div>
-        
+
         <div className={styles.analyticsSection}>
           <h2 className={styles.sectionTitle}>Tutor Performance</h2>
-                    <div className={styles.dateFilter}>
-                      <label className={styles.dateBox}>
-                        <span>From</span>
-                        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className={styles.dateInput} />
-                      </label>
-          
-                      <label className={styles.dateBox}>
-                        <span>To</span>
-                        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className={styles.dateInput} />
-                      </label>
-                    </div> 
-          
+
+          <div className={styles.dateFilter}>
+            <label className={styles.dateBox}>
+              <span>From</span>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className={styles.dateInput}
+              />
+            </label>
+
+            <label className={styles.dateBox}>
+              <span>To</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className={styles.dateInput}
+              />
+            </label>
+          </div>
+
           {loading ? (
             <div className={styles.loadingContainer}>
               <p>Loading tutor data...</p>
@@ -367,17 +353,18 @@ const handleExport = () => {
                     <th>Total Sessions</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {tutors.map(tutor => (
-                    <tr 
-                      key={tutor.id} 
+                  {tutors.map((tutor) => (
+                    <tr
+                      key={tutor.id}
                       onClick={() => handleTutorClick(tutor.id)}
                       className={styles.clickableRow}
                     >
                       <td className={styles.imageCell}>
-                        <img 
-                          src={tutor.profilePic} 
-                          alt={`${tutor.name}'s profile`} 
+                        <img
+                          src={tutor.profilePic}
+                          alt={`${tutor.name}'s profile`}
                           className={styles.profilePic}
                           onError={(e) => {
                             e.target.onerror = null;
@@ -385,19 +372,22 @@ const handleExport = () => {
                           }}
                         />
                       </td>
+
                       <td>{tutor.name}</td>
+
                       <td>
                         <div className={styles.ratingContainer}>
                           <span className={styles.ratingValue}>
                             {tutor.avgRating || 0}
                           </span>
+
                           <div className={styles.starRating}>
-                            {[1, 2, 3, 4, 5].map(star => (
-                              <span 
-                                key={star} 
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span
+                                key={star}
                                 className={`${styles.star} ${
-                                  star <= Math.round(tutor.avgRating) 
-                                    ? styles.filled 
+                                  star <= Math.round(tutor.avgRating)
+                                    ? styles.filled
                                     : styles.empty
                                 }`}
                               >
@@ -407,6 +397,7 @@ const handleExport = () => {
                           </div>
                         </div>
                       </td>
+
                       <td>{tutor.totalSessions}</td>
                     </tr>
                   ))}
