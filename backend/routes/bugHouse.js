@@ -3,6 +3,10 @@ const router = express.Router();
 const BugHouse = require("../models/BugHouse");
 const multer = require('multer');
 const upload = multer();
+const {
+  DEFAULT_CENTER_AVAILABILITY,
+  normalizeCenterAvailability,
+} = require("../utils/centerAvailability");
 
 // Get BugHouse settings
 router.get("/", async (req, res) => {
@@ -18,9 +22,11 @@ router.get("/", async (req, res) => {
           phone: "",
           address: "",
         },
+        centerAvailability: DEFAULT_CENTER_AVAILABILITY,
       });
       await settings.save();
     }
+    settings.centerAvailability = normalizeCenterAvailability(settings.centerAvailability);
     res.json(settings);
   } catch (error) {
     console.error("Error fetching BugHouse settings:", error);
@@ -34,6 +40,9 @@ router.put("/", upload.single('logo'), async (req, res) => {
     // Get contact info and the request boolean from body (it was sent as JSON string)
     const contactInfo = JSON.parse(req.body.contactInfo);
     const tutorRequestsEnabled = JSON.parse(req.body.tutorRequestsEnabled);
+    const centerAvailability = normalizeCenterAvailability(
+      req.body.centerAvailability ? JSON.parse(req.body.centerAvailability) : undefined
+    );
 
     
     // Get logo file from multer
@@ -48,7 +57,9 @@ router.put("/", upload.single('logo'), async (req, res) => {
     if (!settings) {
       settings = new BugHouse({ 
         logo: logo,
-        contactInfo: contactInfo 
+        contactInfo: contactInfo,
+        tutorRequestsEnabled,
+        centerAvailability,
       });
     } else {
       if (logo) {
@@ -56,6 +67,7 @@ router.put("/", upload.single('logo'), async (req, res) => {
       }
       settings.contactInfo = contactInfo;
       settings.tutorRequestsEnabled = tutorRequestsEnabled;
+      settings.centerAvailability = centerAvailability;
     }
 
     await settings.save();

@@ -6,6 +6,12 @@ import axios from "axios";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import styles from "../../styles/FindMyTutorProfile.module.css";
 import StudentSidebar from "../../components/Sidebar/StudentSidebar";
+import {
+  DAYS,
+  DEFAULT_CENTER_AVAILABILITY,
+  fetchCenterAvailability,
+  getCalendarBounds,
+} from "../../utils/centerAvailability";
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
@@ -24,6 +30,8 @@ function FindMyTutorProfile() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
+  const [centerAvailability, setCenterAvailability] = useState(DEFAULT_CENTER_AVAILABILITY);
+  const calendarBounds = getCalendarBounds(centerAvailability);
 
   useEffect(() => {
     const fetchTutorProfile = async () => {
@@ -58,6 +66,9 @@ function FindMyTutorProfile() {
     const fetchTutorAvailability = async () => {
       try {
         console.log("Fetching availability for tutor ID:", tutorId);
+        const fetchedCenterAvailability = await fetchCenterAvailability(BACKEND_URL);
+        setCenterAvailability(fetchedCenterAvailability);
+
         const availabilityResponse = await axios.get(
           `${BACKEND_URL}/api/availability/${tutorId}`,
           { withCredentials: true }
@@ -68,7 +79,7 @@ function FindMyTutorProfile() {
         // Convert availability data to calendar events
         const formattedEvents = [];
         // Start from Monday of current week
-        const currentDate = moment().startOf('week').add(1, 'days');
+        const currentDate = moment().startOf('week');
 
         availabilityResponse.data.forEach((slot) => {
           // Skip slots with empty times
@@ -76,22 +87,11 @@ function FindMyTutorProfile() {
             return;
           }
 
-          // Skip weekend days
-          if (['Saturday', 'Sunday'].includes(slot.day)) {
-            return;
-          }
-          
-          // Get the day index (0-4 for Monday-Friday)
-          const dayMapping = {
-            'Monday': 0,
-            'Tuesday': 1,
-            'Wednesday': 2,
-            'Thursday': 3,
-            'Friday': 4
-          };
-          
+          const dayIndex = DAYS.indexOf(slot.day);
+          if (dayIndex === -1) return;
+
           // Create date for this week's occurrence of the day
-          const eventDate = currentDate.clone().add(dayMapping[slot.day], 'days');
+          const eventDate = currentDate.clone().add(dayIndex, 'days');
           
           // Create start and end times
           const startDateTime = eventDate.clone()
@@ -257,17 +257,17 @@ function FindMyTutorProfile() {
               startAccessor="start"
               endAccessor="end"
               style={{ height: 500, width: "100%" }}
-              views={["work_week"]}
-              defaultView="work_week"
+              views={["week"]}
+              defaultView="week"
               date={moment().toDate()}
               toolbar={false}
-              min={moment().hours(10).minutes(0).toDate()}
-              max={moment().hours(18).minutes(0).toDate()}
+              min={calendarBounds.min}
+              max={calendarBounds.max}
               step={30}
               timeslots={2}
               eventPropGetter={eventStyleGetter}
               components={{
-                work_week: {
+                week: {
                   header: customDayHeader,
                 },
               }}

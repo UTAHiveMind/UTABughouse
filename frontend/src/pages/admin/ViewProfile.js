@@ -6,6 +6,14 @@ import axios from "axios";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import styles from "../../styles/FindMyTutorProfile.module.css";
 import AdminSidebar from "../../components/Sidebar/AdminSidebar";
+import {
+  DAYS,
+  DEFAULT_CENTER_AVAILABILITY,
+  fetchCenterAvailability,
+  formatCenterAvailabilitySummary,
+  getCalendarBounds,
+  isWithinCenterAvailability,
+} from "../../utils/centerAvailability";
 
 // Get configuration from environment variables
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
@@ -24,6 +32,15 @@ const formats = {
 
 // Custom components for the calendar
 const customComponents = {
+  week: {
+    header: ({ date }) => {
+      return (
+        <div style={{ textAlign: "center", fontWeight: "bold" }}>
+          {moment(date).format('dddd')}
+        </div>
+      );
+    },
+  },
   work_week: {
     header: ({ date }) => {
       return (
@@ -49,6 +66,8 @@ function ViewProfile() {
   const [adminSession, setAdminSession] = useState(null);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
   const [isCalendarFullscreen, setIsCalendarFullscreen] = useState(false);
+  const [centerAvailability, setCenterAvailability] = useState(DEFAULT_CENTER_AVAILABILITY);
+  const calendarBounds = getCalendarBounds(centerAvailability);
 
   const courseMap = courseList.reduce((map, course) => {
     map[course._id] = `${course.title} (${course.code})`;
@@ -104,6 +123,9 @@ function ViewProfile() {
 
     const fetchTutorAvailability = async (userId) => {
       try {
+        const fetchedCenterAvailability = await fetchCenterAvailability(BACKEND_URL);
+        setCenterAvailability(fetchedCenterAvailability);
+
         const availabilityResponse = await axios.get(
           `${BACKEND_URL}/api/availability/${userId}`
         );
@@ -111,7 +133,7 @@ function ViewProfile() {
         // Convert availability data to calendar events
         const formattedEvents = [];
         // Start from Monday of current week
-        const currentDate = moment().startOf('week').add(1, 'days');
+        const currentDate = moment().startOf('week');
 
         availabilityResponse.data.forEach((slot) => {
           // Skip slots with empty times
@@ -119,22 +141,11 @@ function ViewProfile() {
             return;
           }
 
-          // Skip weekend days
-          if (['Saturday', 'Sunday'].includes(slot.day)) {
-            return;
-          }
-          
-          // Get the day index (0-4 for Monday-Friday)
-          const dayMapping = {
-            'Monday': 0,
-            'Tuesday': 1,
-            'Wednesday': 2,
-            'Thursday': 3,
-            'Friday': 4
-          };
-          
+          const dayIndex = DAYS.indexOf(slot.day);
+          if (dayIndex === -1) return;
+
           // Create date for this week's occurrence of the day
-          const eventDate = currentDate.clone().add(dayMapping[slot.day], 'days');
+          const eventDate = currentDate.clone().add(dayIndex, 'days');
           
           // Create start and end times
           const startDateTime = eventDate.clone()
@@ -262,17 +273,9 @@ function ViewProfile() {
 
   // Handle slot selection (add new events)
   const handleSelectSlot = (slotInfo) => {
-    // Check if it's a weekend day
-    const day = moment(slotInfo.start).format('dddd');
-    if (['Saturday', 'Sunday'].includes(day)) {
-      alert("Cannot set availability for weekends");
-      return;
-    }
-
     if (
       !hasOverlap(slotInfo.start, slotInfo.end) &&
-      slotInfo.start.getHours() >= 10 &&
-      slotInfo.end.getHours() <= 18
+      isWithinCenterAvailability(slotInfo.start, slotInfo.end, centerAvailability)
     ) {
       const newEvent = {
         id: Date.now(), // Temporary unique ID
@@ -282,7 +285,9 @@ function ViewProfile() {
       };
       setEvents((prevEvents) => [...prevEvents, newEvent]);
     } else {
-      alert("Cannot create overlapping availability or outside of 10 AM - 6 PM");
+      alert(
+        `Cannot create overlapping availability or outside center hours (${formatCenterAvailabilitySummary(centerAvailability)}).`
+      );
     }
   };
 
@@ -305,10 +310,8 @@ function ViewProfile() {
           startTime: moment(event.start).format("HH:mm"),
           endTime: moment(event.end).format("HH:mm"),
         }))
-        .filter(event => !['Saturday', 'Sunday'].includes(event.day)) // Filter out weekends
         .sort((a, b) => { // Sort by day of week
-          const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-          return days.indexOf(a.day) - days.indexOf(b.day);
+          return DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
         });
 
       // Call the API to update the availability
@@ -342,7 +345,7 @@ function ViewProfile() {
       // Convert availability data to calendar events
       const formattedEvents = [];
       // Start from Monday of current week
-      const currentDate = moment().startOf('week').add(1, 'days');
+      const currentDate = moment().startOf('week');
 
       availabilityResponse.data.forEach((slot) => {
         // Skip slots with empty times
@@ -350,22 +353,11 @@ function ViewProfile() {
           return;
         }
 
-        // Skip weekend days
-        if (['Saturday', 'Sunday'].includes(slot.day)) {
-          return;
-        }
-        
-        // Get the day index (0-4 for Monday-Friday)
-        const dayMapping = {
-          'Monday': 0,
-          'Tuesday': 1,
-          'Wednesday': 2,
-          'Thursday': 3,
-          'Friday': 4
-        };
-        
+        const dayIndex = DAYS.indexOf(slot.day);
+        if (dayIndex === -1) return;
+
         // Create date for this week's occurrence of the day
-        const eventDate = currentDate.clone().add(dayMapping[slot.day], 'days');
+        const eventDate = currentDate.clone().add(dayIndex, 'days');
         
         // Create start and end times
         const startDateTime = eventDate.clone()
@@ -498,7 +490,7 @@ function ViewProfile() {
         <div className={styles.editingInstructions}>
           <p>Click and drag on the calendar to add availability slots.</p>
           <p>Click on existing slots to remove them.</p>
-          <p>Availability can only be set between 10 AM - 6 PM, Monday to Friday.</p>
+          <p>Availability can only be set during center hours: {formatCenterAvailabilitySummary(centerAvailability)}.</p>
         </div>
         
         <Calendar
@@ -507,12 +499,12 @@ function ViewProfile() {
           startAccessor="start"
           endAccessor="end"
           style={{ height: 'calc(100vh - 150px)', width: "100%" }}
-          views={["work_week"]}
-          defaultView="work_week"
+          views={["week"]}
+          defaultView="week"
           date={moment().toDate()}
           toolbar={false}
-          min={moment().hours(10).minutes(0).toDate()}
-          max={moment().hours(18).minutes(0).toDate()}
+          min={calendarBounds.min}
+          max={calendarBounds.max}
           step={30}
           timeslots={2}
           formats={formats}
@@ -707,7 +699,7 @@ function ViewProfile() {
                 <p>Click and drag on the calendar to add availability slots.</p>
                 <p>Click on existing slots to remove them.</p>
                 <p>For easier editing, use the "Edit in Fullscreen" button above.</p>
-                <p>Availability can only be set between 10 AM - 6 PM, Monday to Friday.</p>
+                <p>Availability can only be set during center hours: {formatCenterAvailabilitySummary(centerAvailability)}.</p>
               </div>
             )}
             
@@ -717,12 +709,12 @@ function ViewProfile() {
               startAccessor="start"
               endAccessor="end"
               style={{ height: 500, width: "100%" }}
-              views={["work_week"]}
-              defaultView="work_week"
+              views={["week"]}
+              defaultView="week"
               date={moment().toDate()}
               toolbar={false}
-              min={moment().hours(10).minutes(0).toDate()}
-              max={moment().hours(18).minutes(0).toDate()}
+              min={calendarBounds.min}
+              max={calendarBounds.max}
               step={30}
               timeslots={2}
               formats={formats}

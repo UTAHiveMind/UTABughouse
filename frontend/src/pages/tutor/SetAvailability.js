@@ -6,6 +6,14 @@ import styles from "../../styles/SetAvailability.module.css";
 import TutorSidebar from "../../components/Sidebar/TutorSidebar";
 import { axiosGetData } from "../../utils/api";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
+import {
+  DAYS,
+  DEFAULT_CENTER_AVAILABILITY,
+  fetchCenterAvailability,
+  formatCenterAvailabilitySummary,
+  getCalendarBounds,
+  isWithinCenterAvailability,
+} from "../../utils/centerAvailability";
 
 /* Hello I am Rajesh, I was working on most of database and UI,
    this is only for calendar which i would recommend next team
@@ -51,8 +59,10 @@ const SetAvailability = () => {
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState(null);
+  const [centerAvailability, setCenterAvailability] = useState(DEFAULT_CENTER_AVAILABILITY);
   const { isCollapsed } = useSidebar();
   const sidebarWidth = isCollapsed ? "80px" : "270px";
+  const calendarBounds = getCalendarBounds(centerAvailability);
 
   useEffect(() => {
     const fetchUserSession = async () => {
@@ -98,27 +108,21 @@ const SetAvailability = () => {
 
         const data = await response.json();
 
+        const fetchedCenterAvailability = await fetchCenterAvailability(BACKEND_URL);
+        setCenterAvailability(fetchedCenterAvailability);
+
         const formattedEvents = [];
-        const currentDate = moment().startOf("week").add(1, "days");
+        const currentDate = moment().startOf("week");
 
         data.forEach((slot) => {
           if (slot.startTime === "00:00" && slot.endTime === "00:00") {
             return;
           }
 
-          if (["Saturday", "Sunday"].includes(slot.day)) {
-            return;
-          }
+          const dayIndex = DAYS.indexOf(slot.day);
+          if (dayIndex === -1) return;
 
-          const dayMapping = {
-            Monday: 0,
-            Tuesday: 1,
-            Wednesday: 2,
-            Thursday: 3,
-            Friday: 4,
-          };
-
-          const eventDate = currentDate.clone().add(dayMapping[slot.day], "days");
+          const eventDate = currentDate.clone().add(dayIndex, "days");
 
           const startDateTime = eventDate
             .clone()
@@ -159,17 +163,9 @@ const SetAvailability = () => {
   };
 
   const handleSelectSlot = (slotInfo) => {
-    const day = moment(slotInfo.start).format("dddd");
-
-    if (["Saturday", "Sunday"].includes(day)) {
-      alert("Cannot set availability for weekends");
-      return;
-    }
-
     if (
       !hasOverlap(slotInfo.start, slotInfo.end) &&
-      slotInfo.start.getHours() >= 10 &&
-      slotInfo.end.getHours() <= 18
+      isWithinCenterAvailability(slotInfo.start, slotInfo.end, centerAvailability)
     ) {
       const newEvent = {
         id: Date.now(),
@@ -179,7 +175,9 @@ const SetAvailability = () => {
 
       setEvents((prevEvents) => [...prevEvents, newEvent]);
     } else {
-      alert("Cannot create overlapping availability or outside of 10 AM - 6 PM");
+      alert(
+        `Cannot create overlapping availability or outside center hours (${formatCenterAvailabilitySummary(centerAvailability)}).`
+      );
     }
   };
 
@@ -201,10 +199,8 @@ const SetAvailability = () => {
         startTime: moment(event.start).format("HH:mm"),
         endTime: moment(event.end).format("HH:mm"),
       }))
-      .filter((event) => !["Saturday", "Sunday"].includes(event.day))
       .sort((a, b) => {
-        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-        return days.indexOf(a.day) - days.indexOf(b.day);
+        return DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
       });
 
     try {
@@ -261,7 +257,8 @@ const SetAvailability = () => {
         ) : (
           <div className={styles.availabilityCard}>
             <div className={styles.instructionsBox}>
-              Select available time slots between <strong>10 AM - 6 PM</strong>.
+              Select available time slots during center hours:{" "}
+              <strong>{formatCenterAvailabilitySummary(centerAvailability)}</strong>.
               Click an existing slot to remove it.
             </div>
 
@@ -272,19 +269,19 @@ const SetAvailability = () => {
                 startAccessor="start"
                 endAccessor="end"
                 style={{ height: 500, width: "100%" }}
-                views={["work_week"]}
-                defaultView="work_week"
+                views={["week"]}
+                defaultView="week"
                 date={moment().toDate()}
                 toolbar={false}
                 selectable
                 onSelectSlot={handleSelectSlot}
                 onSelectEvent={handleEventDelete}
-                min={moment().hours(10).minutes(0).toDate()}
-                max={moment().hours(18).minutes(0).toDate()}
+                min={calendarBounds.min}
+                max={calendarBounds.max}
                 step={30}
                 timeslots={2}
                 formats={formats}
-                components={{ customComponents }}
+                components={customComponents}
               />
             </div>
 

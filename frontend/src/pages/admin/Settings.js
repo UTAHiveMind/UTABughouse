@@ -3,6 +3,10 @@ import axios from "axios";
 import styles from "../../styles/Settings.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
+import {
+  DEFAULT_CENTER_AVAILABILITY,
+  normalizeCenterAvailability,
+} from "../../utils/centerAvailability";
 
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
 const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || "localhost";
@@ -18,6 +22,7 @@ function Settings() {
       address: "",
     },
     tutorRequestsEnabled: true,
+    centerAvailability: DEFAULT_CENTER_AVAILABILITY,
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -41,13 +46,31 @@ function Settings() {
             address: "",
           },
           tutorRequestsEnabled: true,
+          centerAvailability: DEFAULT_CENTER_AVAILABILITY,
         });
       } else {
-        setSettings(response.data);
+        setSettings({
+          ...response.data,
+          centerAvailability: normalizeCenterAvailability(response.data.centerAvailability),
+        });
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
     }
+  };
+
+  const handleCenterAvailabilityChange = (day, field, value) => {
+    setSettings((prev) => ({
+      ...prev,
+      centerAvailability: normalizeCenterAvailability(prev.centerAvailability).map((slot) =>
+        slot.day === day
+          ? {
+              ...slot,
+              [field]: field === "enabled" ? Boolean(value) : value,
+            }
+          : slot
+      ),
+    }));
   };
 
   const handleFileSelect = (event) => {
@@ -82,6 +105,10 @@ function Settings() {
       formData.append(
         "tutorRequestsEnabled",
         JSON.stringify(settings.tutorRequestsEnabled)
+      );
+      formData.append(
+        "centerAvailability",
+        JSON.stringify(normalizeCenterAvailability(settings.centerAvailability))
       );
 
       await axios.put(`${BACKEND_URL}/api/bughouse`, formData, {
@@ -181,6 +208,59 @@ function Settings() {
                 />
                 {settings.tutorRequestsEnabled ? "Enabled" : "Disabled"}
               </label>
+            </div>
+
+            <div className={styles.sectionCard}>
+              <h3>Center Availability Hours</h3>
+
+              <div className={styles.availabilityGrid}>
+                {normalizeCenterAvailability(settings.centerAvailability).map((slot) => (
+                  <div key={slot.day} className={styles.availabilityRow}>
+                    <label className={styles.dayToggle}>
+                      <input
+                        type="checkbox"
+                        checked={slot.enabled}
+                        onChange={(e) =>
+                          handleCenterAvailabilityChange(
+                            slot.day,
+                            "enabled",
+                            e.target.checked
+                          )
+                        }
+                      />
+                      <span>{slot.day}</span>
+                    </label>
+
+                    <div className={styles.timeInputs}>
+                      <input
+                        type="time"
+                        value={slot.startTime}
+                        disabled={!slot.enabled}
+                        onChange={(e) =>
+                          handleCenterAvailabilityChange(
+                            slot.day,
+                            "startTime",
+                            e.target.value
+                          )
+                        }
+                      />
+                      <span>to</span>
+                      <input
+                        type="time"
+                        value={slot.endTime}
+                        disabled={!slot.enabled}
+                        onChange={(e) =>
+                          handleCenterAvailabilityChange(
+                            slot.day,
+                            "endTime",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <button type="submit" disabled={loading} className={styles.actionButton}>

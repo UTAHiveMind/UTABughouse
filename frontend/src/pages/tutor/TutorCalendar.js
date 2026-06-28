@@ -4,6 +4,11 @@ import { DayPilot, DayPilotCalendar, DayPilotMonth, DayPilotNavigator } from "@d
 import "../../styles/CalendarDaypilot.css";
 import { axiosGetData } from '../../utils/api';
 import axios from 'axios';
+import {
+  DEFAULT_CENTER_AVAILABILITY,
+  fetchCenterAvailability,
+  getCalendarBounds,
+} from '../../utils/centerAvailability';
 
 // Mobile View
 import useIsMobile from '../../hooks/useIsMobile';
@@ -32,7 +37,9 @@ const TutorCalendar = () => {
   const [userData, setUserData] = useState(null);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [error, setError] = useState('');
+  const [centerAvailability, setCenterAvailability] = useState(DEFAULT_CENTER_AVAILABILITY);
   const isMobile = useIsMobile();
+  const calendarBounds = getCalendarBounds(centerAvailability);
 
   const onTimeRangeSelected = async (args) => {
     args.control.clearSelection();
@@ -56,6 +63,18 @@ const TutorCalendar = () => {
     };
 
     fetchUserSession();
+  }, []);
+
+  useEffect(() => {
+    const loadCenterAvailability = async () => {
+      try {
+        setCenterAvailability(await fetchCenterAvailability(BACKEND_URL));
+      } catch (error) {
+        console.error("Error fetching center availability:", error);
+      }
+    };
+
+    loadCenterAvailability();
   }, []);
 
   // Fetch tutor sessions
@@ -167,8 +186,8 @@ const TutorCalendar = () => {
           durationBarVisible={false}
           controlRef={setDayView}
           headerDateFormat={"dddd, MMMM d"}
-          businessBeginsHour={8}
-          businessEndsHour={18}
+          businessBeginsHour={calendarBounds.startHour}
+          businessEndsHour={calendarBounds.endHour}
           showNonBusiness={false}
         />
         <DayPilotCalendar
@@ -179,8 +198,8 @@ const TutorCalendar = () => {
           durationBarVisible={false}
           controlRef={setWeekView}
           headerDateFormat={"ddd, MMM d"}
-          businessBeginsHour={8}
-          businessEndsHour={18}
+          businessBeginsHour={calendarBounds.startHour}
+          businessEndsHour={calendarBounds.endHour}
           showNonBusiness={false}
         />
         <DayPilotMonth

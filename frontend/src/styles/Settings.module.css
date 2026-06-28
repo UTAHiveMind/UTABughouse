@@ -136,6 +136,53 @@ html, body {
   color: #333;
 }
 
+.availabilityGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.availabilityRow {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(240px, 2fr);
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.dayToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #333;
+}
+
+.timeInputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.timeInputs input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #333;
+  box-sizing: border-box;
+}
+
+.timeInputs input:disabled {
+  background: #f1f3f5;
+  color: #777;
+}
+
 .actionButton {
   padding: 6px 12px;
   background-color: #0064B1;
@@ -209,5 +256,17 @@ html, body {
   .actionButton {
     width: 100%;
     padding: 8px 0;
+  }
+
+  .availabilityRow {
+    grid-template-columns: 1fr;
+  }
+
+  .timeInputs {
+    grid-template-columns: 1fr;
+  }
+
+  .timeInputs span {
+    text-align: center;
   }
 }

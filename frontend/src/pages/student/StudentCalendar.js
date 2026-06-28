@@ -3,6 +3,11 @@ import { DayPilot, DayPilotCalendar, DayPilotMonth, DayPilotNavigator } from "@d
 import "../../styles/CalendarDaypilot.css";
 import { axiosGetData } from '../../utils/api'; // Import the API utility
 import axios from 'axios';
+import {
+  DEFAULT_CENTER_AVAILABILITY,
+  fetchCenterAvailability,
+  getCalendarBounds,
+} from '../../utils/centerAvailability';
 
 
 // Mobile View
@@ -37,7 +42,9 @@ const StudentCalendar = () => {
   const [tutors, setTutors] = useState([]);
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [error, setError] = useState('');
+  const [centerAvailability, setCenterAvailability] = useState(DEFAULT_CENTER_AVAILABILITY);
   const isMobile = useIsMobile();
+  const calendarBounds = getCalendarBounds(centerAvailability);
   
 
   const onTimeRangeSelected = async (args) => {
@@ -63,6 +70,18 @@ const StudentCalendar = () => {
       };
       
       fetchUserSession();
+  }, []);
+
+  useEffect(() => {
+    const loadCenterAvailability = async () => {
+      try {
+        setCenterAvailability(await fetchCenterAvailability(BACKEND_URL));
+      } catch (error) {
+        console.error("Error fetching center availability:", error);
+      }
+    };
+
+    loadCenterAvailability();
   }, []);
 
   // Define fetchUpcomingSessions as a useCallback function
@@ -195,8 +214,8 @@ const StudentCalendar = () => {
           durationBarVisible={false}
           controlRef={setDayView}
           headerDateFormat={"dddd, MMMM d"}
-          businessBeginsHour={8} // Start at 10 AM
-          businessEndsHour={18}   // End at 6 PM
+          businessBeginsHour={calendarBounds.startHour}
+          businessEndsHour={calendarBounds.endHour}
           showNonBusiness={false} // Hides non-business hours
         />
         <DayPilotCalendar
@@ -207,8 +226,8 @@ const StudentCalendar = () => {
           durationBarVisible={false}
           controlRef={setWeekView}
           headerDateFormat={"ddd, MMM d"}
-          businessBeginsHour={8} // Start at 10 AM
-          businessEndsHour={18}   // End at 6 PM
+          businessBeginsHour={calendarBounds.startHour}
+          businessEndsHour={calendarBounds.endHour}
           showNonBusiness={false} // Hides non-business hours
         />
         <DayPilotMonth

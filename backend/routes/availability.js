@@ -3,6 +3,20 @@ const moment = require("moment");
 const router = express.Router();
 const User = require("../models/User");
 const TutorProfile = require("../models/TutorProfile");
+const BugHouse = require("../models/BugHouse");
+const {
+    DAYS,
+    DEFAULT_CENTER_AVAILABILITY,
+    isWithinCenterAvailability,
+    normalizeCenterAvailability,
+} = require("../utils/centerAvailability");
+
+async function getCenterAvailability() {
+    const settings = await BugHouse.findOne().lean();
+    return normalizeCenterAvailability(
+        settings?.centerAvailability || DEFAULT_CENTER_AVAILABILITY
+    );
+}
 
 // Get tutor availability
 router.get("/:id", async (req, res) => {
@@ -13,11 +27,12 @@ router.get("/:id", async (req, res) => {
             return res.status(404).json({ message: "Tutor not found" });
         }
 
-        // Filter out any invalid or weekend availability
+        const centerAvailability = await getCenterAvailability();
+
+        // Filter out invalid availability and anything outside center hours
         const validAvailability = tutor.availability.filter(slot => 
-            slot.startTime !== "00:00" && 
-            slot.endTime !== "00:00" &&
-            !['Saturday', 'Sunday'].includes(slot.day)
+            !(slot.startTime === "00:00" && slot.endTime === "00:00") &&
+            isWithinCenterAvailability(slot, centerAvailability)
         );
 
         res.status(200).json(validAvailability);
@@ -42,18 +57,22 @@ router.post("/:id/submit", async (req, res) => {
             return res.status(404).json({ message: "Tutor not found" });
         }
 
+        const centerAvailability = await getCenterAvailability();
+
         // Validate and sort availability by day
         const validAvailability = availability
             .filter(slot => {
                 // Validate time format
                 const isValidTime = (time) => /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
-                // Only accept weekdays
-                const isWeekday = !['Saturday', 'Sunday'].includes(slot.day);
-                return isValidTime(slot.startTime) && isValidTime(slot.endTime) && isWeekday;
+                return (
+                    DAYS.includes(slot.day) &&
+                    isValidTime(slot.startTime) &&
+                    isValidTime(slot.endTime) &&
+                    isWithinCenterAvailability(slot, centerAvailability)
+                );
             })
             .sort((a, b) => {
-                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-                return days.indexOf(a.day) - days.indexOf(b.day);
+                return DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
             });
 
         // Update tutor's availability with only the valid slots
@@ -106,6 +125,8 @@ router.get("/week/:startDate", async (req, res) => {
   }
 
   try {
+    const centerAvailability = await getCenterAvailability();
+
     // Get all tutors
     const baseTutors = await User.find({ role: "Tutor" }).lean();
 
@@ -134,10 +155,16 @@ router.get("/week/:startDate", async (req, res) => {
       });
 
       availabilityMap[date] = tutors
-        .filter(tutor => tutor.availability?.some(a => a.day === dayOfWeek))
+        .filter(tutor =>
+          tutor.availability?.some(a =>
+            a.day === dayOfWeek && isWithinCenterAvailability(a, centerAvailability)
+          )
+        )
         .sort((a,b) => a.name.localeCompare(b.name))
         .map(tutor => {
-          const slotsForDay = tutor.availability.filter(a => a.day === dayOfWeek);
+          const slotsForDay = tutor.availability.filter(a =>
+            a.day === dayOfWeek && isWithinCenterAvailability(a, centerAvailability)
+          );
           const slotStrings = mergeTimeRanges(slotsForDay);
 
           return {

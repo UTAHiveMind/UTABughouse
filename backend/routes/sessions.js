@@ -4,8 +4,29 @@ const User = require('../models/User');
 const mongoose = require('mongoose'); // Add this importS
 const Session = require('../models/Session');
 const Attendance = require('../models/Attendance');
+const BugHouse = require('../models/BugHouse');
+const {
+  DEFAULT_CENTER_AVAILABILITY,
+  getDayCenterAvailability,
+  isWithinCenterAvailability,
+  normalizeCenterAvailability,
+  timeToMinutes,
+} = require('../utils/centerAvailability');
 
 const {sendNotification} = require('../routes/notifications/confirmation');
+
+async function getCenterAvailability() {
+  const settings = await BugHouse.findOne().lean();
+  return normalizeCenterAvailability(
+    settings?.centerAvailability || DEFAULT_CENTER_AVAILABILITY
+  );
+}
+
+function minutesToTime(minutes) {
+  const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+  const mins = (minutes % 60).toString().padStart(2, '0');
+  return `${hours}:${mins}`;
+}
 
 // Get available time slots for a tutor on a specific date
 router.get('/availability/:tutorId/:date', async (req, res) => {
@@ -24,10 +45,19 @@ router.get('/availability/:tutorId/:date', async (req, res) => {
       timeZone: 'UTC'
     });
     
-    // Find the tutor's availability for that day
-    const dayAvailability = tutor.availability.find(a => a.day === dayOfWeek);
+    const centerAvailability = await getCenterAvailability();
+    const centerDay = getDayCenterAvailability(centerAvailability, dayOfWeek);
     
-    if (!dayAvailability) {
+    if (!centerDay?.enabled) {
+      return res.json([]);
+    }
+
+    // Find every tutor availability block for that day
+    const dayAvailability = tutor.availability.filter(a =>
+      a.day === dayOfWeek && isWithinCenterAvailability(a, centerAvailability)
+    );
+    
+    if (!dayAvailability.length) {
       return res.json([]);
     }
 
@@ -44,12 +74,16 @@ router.get('/availability/:tutorId/:date', async (req, res) => {
       status: { $ne: 'Cancelled' }
     });
 
-    const availableSlots = generateTimeSlots(
-      dayAvailability.startTime,
-      dayAvailability.endTime,
-      bookedSessions,
-      date
-    );
+    const availableSlots = dayAvailability.flatMap((availability) => {
+      const startTime = minutesToTime(
+        Math.max(timeToMinutes(availability.startTime), timeToMinutes(centerDay.startTime))
+      );
+      const endTime = minutesToTime(
+        Math.min(timeToMinutes(availability.endTime), timeToMinutes(centerDay.endTime))
+      );
+
+      return generateTimeSlots(startTime, endTime, bookedSessions, date);
+    });
 
     res.json(availableSlots);
   } catch (error) {

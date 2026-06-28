@@ -1,9 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '../../styles/StudentWeeklyCalendar.module.css';
+import {
+  DAYS,
+  DEFAULT_CENTER_AVAILABILITY,
+  fetchCenterAvailability,
+  getCalendarBounds,
+} from '../../utils/centerAvailability';
+
+const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
+const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || 'localhost';
+const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || '4000';
+const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
 
 const StudentWeeklyCalendar = ({ schedule }) => {
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const hours = Array.from({ length: 9 }, (_, i) => i + 10); // 10 AM to 6 PM
+  const [centerAvailability, setCenterAvailability] = useState(DEFAULT_CENTER_AVAILABILITY);
+  const calendarBounds = getCalendarBounds(centerAvailability);
+  const days = DAYS;
+  const hours = Array.from(
+    { length: Math.max(calendarBounds.endHour - calendarBounds.startHour, 1) },
+    (_, i) => i + calendarBounds.startHour
+  );
+
+  useEffect(() => {
+    const loadCenterAvailability = async () => {
+      try {
+        setCenterAvailability(await fetchCenterAvailability(BACKEND_URL));
+      } catch (error) {
+        console.error("Error fetching center availability:", error);
+      }
+    };
+
+    loadCenterAvailability();
+  }, []);
   
 
   const renderTimeSlots = (day) => {
@@ -43,7 +71,7 @@ const StudentWeeklyCalendar = ({ schedule }) => {
       <div className={styles.timeLabels}>
         {hours.map((hour) => (
           <div key={hour} className={styles.hourLabel}>
-            {hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+            {hour === 0 ? '12 AM' : hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
           </div>
         ))}
       </div>
