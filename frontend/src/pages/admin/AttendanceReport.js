@@ -206,15 +206,20 @@ function AttendanceReport() {
         setLastMonthCount(lastMonthSessions.length);
 
         const noShows = attendanceList.filter(
-          (record) => record.wasNoShow === true
+          (record) => (record.visitType || "Session") === "Session" && record.wasNoShow === true
         );
         setNoShowCount(noShows.length);
 
         const processedRecords = attendanceList.map((record) => {
+          const visitType = record.visitType || (record.sessionID ? "Session" : "Walk-In");
+          const studentIdNumber =
+            record.studentIdNumber || record.studentID?.studentID || "N/A";
           const studentName = record.studentID
             ? `${record.studentID.firstName || ""} ${
                 record.studentID.lastName || ""
               }`.trim()
+            : visitType === "Walk-In"
+            ? "Walk-In Student"
             : "Unknown Student";
 
           const tutorName =
@@ -222,13 +227,13 @@ function AttendanceReport() {
               ? `${record.sessionID.tutorID.firstName || ""} ${
                   record.sessionID.tutorID.lastName || ""
                 }`.trim()
-              : "Unknown Tutor";
+              : "N/A";
 
           const sessionTime = record.sessionID
             ? record.sessionID.sessionTime
-            : null;
+            : record.checkInTime || record.createdAt;
 
-          const rawDate = new Date(record.sessionID.sessionTime);
+          const rawDate = new Date(sessionTime);
           const { date, time } = formatDateTime(sessionTime);
 
           let formattedDate = date;
@@ -245,25 +250,34 @@ function AttendanceReport() {
           return {
             id: record._id || "N/A",
             sessionId: record.sessionID ? record.sessionID._id : "N/A",
+            type: visitType === "Walk-In" ? "Walk-In" : "Session",
+            studentIdNumber,
             studentName,
             tutorName,
             rawDateTime: rawDate,
             date: formattedDate,
-            startTime: time,
+            startTime: visitType === "Walk-In" ? "N/A" : time,
             duration: record.sessionID
               ? record.sessionID.duration
               : record.duration || "N/A",
-            endTime: calculateEndTime(
-              time,
-              record.sessionID ? record.sessionID.duration : record.duration
-            ),
+            endTime:
+              visitType === "Walk-In"
+                ? "N/A"
+                : calculateEndTime(
+                    time,
+                    record.sessionID ? record.sessionID.duration : record.duration
+                  ),
             checkInTime: checkInDateTime.time,
             checkOutTime: checkOutDateTime.time,
             checkInStatus: record.checkInStatus || "N/A",
             checkOutStatus: record.checkOutStatus || "N/A",
             wasNoShow: record.wasNoShow,
             status:
-              record.sessionID && record.sessionID.status === "Cancelled"
+              visitType === "Walk-In" && record.checkOutTime
+                ? "Completed"
+                : visitType === "Walk-In" && record.checkInTime
+                ? "In Progress"
+                : record.sessionID && record.sessionID.status === "Cancelled"
                 ? "Cancelled"
                 : record.wasNoShow
                 ? "No Show"
@@ -277,7 +291,7 @@ function AttendanceReport() {
 
         processedRecords.sort((a, b) => {
           try {
-            return new Date(b.date) - new Date(a.date);
+            return b.rawDateTime - a.rawDateTime;
           } catch (error) {
             return 0;
           }
@@ -324,6 +338,8 @@ function AttendanceReport() {
         const sampleRecords = [
           {
             id: 1,
+            type: "Session",
+            studentIdNumber: "1000000001",
             studentName: "Emily Johnson",
             tutorName: "John Doe",
             date: "March 20, 2024",
@@ -339,6 +355,8 @@ function AttendanceReport() {
           },
           {
             id: 2,
+            type: "Session",
+            studentIdNumber: "1000000002",
             studentName: "Michael Chen",
             tutorName: "Sarah Smith",
             date: "March 19, 2024",
@@ -354,6 +372,8 @@ function AttendanceReport() {
           },
           {
             id: 3,
+            type: "Session",
+            studentIdNumber: "1000000003",
             studentName: "Alex Wong",
             tutorName: "Maria Garcia",
             date: "March 18, 2024",
@@ -401,6 +421,8 @@ function AttendanceReport() {
   function buildCsvContent(data, start, end) {
     const headers = [
       "Student Name",
+      "Type",
+      "ID#",
       "Tutor Name",
       "Date",
       "Session Time",
@@ -411,12 +433,17 @@ function AttendanceReport() {
     ];
 
     const rows = data.map((r) => {
-      const sessionTime = `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
+      const sessionTime =
+        r.type === "Walk-In"
+          ? "N/A"
+          : `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
       const realDuration =
         r.wasNoShow || r.status === "Cancelled" ? 0 : r.duration;
 
       return [
         r.studentName,
+        r.type,
+        r.studentIdNumber,
         r.tutorName,
         r.date,
         sessionTime,
@@ -572,7 +599,9 @@ function AttendanceReport() {
                 {loading
                   ? "..."
                   : attendanceRecords.filter(
-                      (record) => record.status === "Completed"
+                      (record) =>
+                        record.type === "Session" &&
+                        record.status === "Completed"
                     ).length}
               </p>
             </div>
@@ -629,6 +658,8 @@ function AttendanceReport() {
                 <thead>
                   <tr>
                     <th>Student</th>
+                    <th>Type</th>
+                    <th>ID#</th>
                     <th>Tutor</th>
                     <th>Date</th>
                     <th>Session Time</th>
@@ -643,6 +674,8 @@ function AttendanceReport() {
                   {attendanceRecords.map((record) => (
                     <tr key={record.id}>
                       <td>{record.studentName}</td>
+                      <td>{record.type}</td>
+                      <td>{record.studentIdNumber}</td>
                       <td>{record.tutorName}</td>
 
                       <td>
@@ -657,7 +690,9 @@ function AttendanceReport() {
                       </td>
 
                       <td>
-                        {record.startTime} to {record.endTime}
+                        {record.type === "Walk-In"
+                          ? "N/A"
+                          : `${record.startTime} to ${record.endTime}`}
                       </td>
 
                       <td>

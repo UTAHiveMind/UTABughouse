@@ -3,8 +3,16 @@ const mongoose = require('mongoose');
 const attendanceSchema = new mongoose.Schema({
     sessionID: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Session",
-        required: true
+        ref: "Session"
+    },
+    visitType: {
+        type: String,
+        enum: ["Session", "Walk-In"],
+        default: "Session"
+    },
+    studentIdNumber: {
+        type: String,
+        trim: true
     },
     studentID: {
         type: mongoose.Schema.Types.ObjectId,

@@ -7,7 +7,7 @@ const cardSwipeLogSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['Student', 'Tutor', 'UNKNOWN']
+        enum: ['Student', 'Tutor', 'Walk-In', 'UNKNOWN']
     },
     firstName: {
         type: String,

@@ -333,6 +333,8 @@ router.put('/:sessionId/status', async (req, res) => {
       const attendance = new Attendance({
         sessionID: session._id,
         studentID,
+        studentIdNumber: session.studentID.studentID || "",
+        visitType: "Session",
         courseID: session.courseID, // Fixes the "ReferenceError: courseID is not defined" error
         checkInTime,
         checkOutTime,
@@ -352,6 +354,8 @@ router.put('/:sessionId/status', async (req, res) => {
       const attendance = new Attendance({
         sessionID: session._id,
         studentID,
+        studentIdNumber: session.studentID.studentID || "",
+        visitType: "Session",
         courseID,
         checkInTime,
         checkOutTime,
@@ -371,6 +375,8 @@ router.put('/:sessionId/status', async (req, res) => {
       const attendance = new Attendance({
         sessionID: session._id,
         studentID,
+        studentIdNumber: session.studentID.studentID || "",
+        visitType: "Session",
         courseID,
         checkInTime,
         checkOutTime,

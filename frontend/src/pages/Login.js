@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import styles from "../styles/Login.module.css";
 import { validateLogin } from "../utils/LoginValidation";
@@ -24,6 +24,76 @@ function Login() {
   const location = useLocation();
   const [logo, setLogo] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [walkInStatus, setWalkInStatus] = useState("Swipe your student ID for walk-in check-in/out.");
+  const [manualWalkInOpen, setManualWalkInOpen] = useState(false);
+  const [manualWalkInId, setManualWalkInId] = useState("");
+  const [walkInLoading, setWalkInLoading] = useState(false);
+  const swipeBufferRef = useRef("");
+  const swipeTimerRef = useRef(null);
+
+  const parseCardData = useCallback((rawData) => {
+    const panMatch = rawData.match(/%B(\d+)\^/);
+    if (!panMatch) return null;
+
+    const cardID = panMatch[1];
+    const rest = rawData.slice(panMatch.index + panMatch[0].length);
+    const slashIdx = rest.indexOf("/");
+
+    if (slashIdx !== -1) {
+      const lastName = rest.slice(0, slashIdx).trim();
+      const afterSlash = rest.slice(slashIdx + 1);
+      const firstSeg = afterSlash.match(/^([^^;/\r\n]+)/);
+      const firstName = firstSeg ? firstSeg[1].trim().split(/\s+/)[0] : "";
+      return { cardID, firstName, lastName };
+    }
+
+    return { cardID, firstName: "", lastName: "" };
+  }, []);
+
+  const submitWalkIn = useCallback(async (payload) => {
+    setWalkInLoading(true);
+    setWalkInStatus("Processing walk-in attendance...");
+
+    try {
+      const response = await axiosPostData(`${BACKEND_URL}/api/attendance/walk-in`, payload);
+      setWalkInStatus(response.data.message || "Walk-in attendance recorded.");
+      setManualWalkInId("");
+      setManualWalkInOpen(false);
+    } catch (error) {
+      setWalkInStatus(
+        error.response?.data?.message ||
+          "Unable to record walk-in attendance. Please try again."
+      );
+    } finally {
+      setWalkInLoading(false);
+    }
+  }, []);
+
+  const processSwipeData = useCallback((rawData) => {
+    if (rawData.startsWith("%B")) {
+      const parsed = parseCardData(rawData);
+      if (!parsed) {
+        setWalkInStatus("Invalid card swipe format.");
+        return;
+      }
+
+      submitWalkIn(parsed);
+      return;
+    }
+
+    if (rawData.startsWith(";")) {
+      const idMatch = rawData.match(/^;(\d+)\?/);
+      if (!idMatch) {
+        setWalkInStatus("Invalid student ID swipe format.");
+        return;
+      }
+
+      submitWalkIn({ studentID: idMatch[1] });
+      return;
+    }
+
+    setWalkInStatus("Unrecognized card format.");
+  }, [parseCardData, submitWalkIn]);
 
   // Check if the user is already authenticated via SSO or session
   useEffect(() => {
@@ -51,6 +121,46 @@ function Login() {
 
     checkSession();
   }, [navigate]);
+
+  useEffect(() => {
+    const resetSwipeBuffer = () => {
+      swipeBufferRef.current = "";
+      if (swipeTimerRef.current) {
+        clearTimeout(swipeTimerRef.current);
+        swipeTimerRef.current = null;
+      }
+    };
+
+    const handleSwipeKeyDown = (event) => {
+      if (manualWalkInOpen || walkInLoading) return;
+
+      const key = event.key;
+      const buffer = swipeBufferRef.current;
+      const isStartingSwipe = !buffer && (key === "%" || key === ";");
+
+      if (!buffer && !isStartingSwipe) return;
+      if (key.length !== 1) return;
+
+      event.preventDefault();
+
+      swipeBufferRef.current += key;
+
+      if (swipeTimerRef.current) clearTimeout(swipeTimerRef.current);
+      swipeTimerRef.current = setTimeout(resetSwipeBuffer, 750);
+
+      if (key === "?") {
+        const rawSwipe = swipeBufferRef.current;
+        resetSwipeBuffer();
+        processSwipeData(rawSwipe);
+      }
+    };
+
+    window.addEventListener("keydown", handleSwipeKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleSwipeKeyDown);
+      resetSwipeBuffer();
+    };
+  }, [manualWalkInOpen, processSwipeData, walkInLoading]);
 
   // Handle traditional email/password login
   const handleSubmit = async (e) => {
@@ -124,6 +234,17 @@ function Login() {
   const handleSSOLogin = () => {
     const ssoUrl = `${BACKEND_URL}/api/auth/saml`;
     window.location.href = ssoUrl;
+  };
+
+  const handleManualWalkInSubmit = (e) => {
+    e.preventDefault();
+    const idInput = manualWalkInId.trim();
+    if (!idInput) {
+      setWalkInStatus("Enter your student ID number.");
+      return;
+    }
+
+    submitWalkIn({ idInput });
   };
 
   return (
@@ -247,9 +368,45 @@ function Login() {
           </p>
 
           <div className={styles.cardSwipeNav}>
-          <Link to="/card-swipe" className={styles.cardSwipeButton}>
-            Card Swipe
-          </Link>
+            <div className={styles.walkInPanel}>
+              <p className={styles.walkInStatus}>{walkInStatus}</p>
+
+              {manualWalkInOpen && (
+                <form
+                  className={styles.walkInManualForm}
+                  onSubmit={handleManualWalkInSubmit}
+                >
+                  <input
+                    type="text"
+                    value={manualWalkInId}
+                    onChange={(e) => setManualWalkInId(e.target.value)}
+                    className={styles.walkInInput}
+                    placeholder="Student ID number"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className={styles.walkInSubmitButton}
+                    disabled={walkInLoading}
+                  >
+                    Submit
+                  </button>
+                </form>
+              )}
+
+              <button
+                type="button"
+                className={styles.cardSwipeButton}
+                onClick={() => setManualWalkInOpen((open) => !open)}
+                disabled={walkInLoading}
+              >
+                {manualWalkInOpen ? "Cancel Manual Entry" : "Manual Walk-In ID"}
+              </button>
+
+              <Link to="/card-swipe" className={styles.cardSwipeLink}>
+                Session Card Swipe
+              </Link>
+            </div>
           </div>
 
         </div>

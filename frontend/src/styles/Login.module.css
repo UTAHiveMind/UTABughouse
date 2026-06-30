@@ -57,16 +57,70 @@
   margin-top: 18px;
 }
 
+.walkInPanel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #e6edf7;
+}
+
+.walkInStatus {
+  margin: 0;
+  color: #25364d;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.walkInManualForm {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.walkInInput {
+  min-width: 0;
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #b8c7dc;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.walkInSubmitButton {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1E63C6, #004A99);
+}
+
 .cardSwipeButton {
-  width: auto;
-  min-width: 130px;
+  width: 100%;
+  min-width: 0;
   padding: 10px 18px;
   color: #fff;
+  border: none;
   border-radius: 8px;
   text-decoration: none;
   text-align: center;
   background: linear-gradient(135deg, #1E63C6, #004A99);
   box-shadow: 0 2px 7px rgba(0, 0, 0, 0.699);
+}
+
+.cardSwipeLink {
+  color: #0064B1;
+  font-size: 13px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.cardSwipeLink:hover {
+  text-decoration: underline;
 }
 
 .formContainer .loginButton,
@@ -84,7 +138,7 @@
 }
 
 .formContainer .loginButton:hover,
-.formContainer .ssologinButton:hover, .cardSwipeButton:hover {
+.formContainer .ssologinButton:hover, .cardSwipeButton:hover, .walkInSubmitButton:hover {
   background: linear-gradient(135deg, #2F7DE1, #0056B3);
   box-shadow: 0 2px 7px rgba(121, 121, 121, 0.699);
 }

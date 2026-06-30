@@ -66,6 +66,15 @@ async function findUserForIdInput(idInput) {
   return user;
 }
 
+function normalizeIdNumber(value) {
+  if (value === undefined || value === null) return "";
+  return String(value).trim();
+}
+
+function getIdNumberFromSwipe({ idInput, cardID, studentID }) {
+  return normalizeIdNumber(studentID || cardID || idInput);
+}
+
 // Helper function to log card swipes (for any swipe attempt, even if user not found)
 async function logCardSwipeAttempt(swipeData, isWelcomeFlow = false, userFound = null, userRole = null) {
   try {
@@ -157,6 +166,7 @@ async function handleAttendanceForUser(user, res) {
     if (!attendance || attendance.wasNoShow === true) {
       const diffInMinutes = (now - closestSession.sessionTime) / 60000;
       let checkInStatus = 'On Time';
+      let message = '';
       if (diffInMinutes < -5) checkInStatus = 'Early';
       else if (diffInMinutes > 5) checkInStatus = 'Late';
 
@@ -164,6 +174,7 @@ async function handleAttendanceForUser(user, res) {
         attendance = new Attendance({
           sessionID: closestSession._id,
           tutorID: user._id,
+          visitType: "Session",
           checkInTime: now,
           checkInStatus,
           wasNoShow: false
@@ -174,6 +185,8 @@ async function handleAttendanceForUser(user, res) {
         attendance = new Attendance({
           sessionID: closestSession._id,
           studentID: user._id,
+          studentIdNumber: user.studentID || "",
+          visitType: "Session",
           checkInTime: now,
           checkInStatus,
           wasNoShow: false
@@ -197,6 +210,7 @@ async function handleAttendanceForUser(user, res) {
     else if (!attendance.checkOutTime) {
       const duration = Math.max(1, Math.round((now - attendance.checkInTime) / 60000));
       let checkOutStatus = 'On Time';
+      let message = '';
       if (now < sessionEnd) checkOutStatus = 'Early';
       else if (now > sessionEnd.getTime() + 5 * 60000) checkOutStatus = 'Late';
 
@@ -246,7 +260,7 @@ router.get('/all', async (req, res) => {
     const attendanceRecords = await Attendance.find()
       .sort({ createdAt: -1 })  //Show newest records first
       .limit(50)                //Limit initial results to 50 records for better performance
-      .populate('studentID', 'firstName lastName')
+      .populate('studentID', 'firstName lastName studentID')
       .populate({
         path: 'sessionID',
         populate: { path: 'tutorID', select: 'firstName lastName' }
@@ -279,8 +293,8 @@ router.get('/fromDtoD', async (req, res) => {
 
     const attendanceRecords = await Attendance.find()
     .sort({ createdAt: -1 })
-    .limit(100)   // Increase limit for filtered queries to avoid missing results
-    .populate('studentID', 'firstName lastName')
+    .limit(500)   // Increase limit for filtered queries to avoid missing results
+    .populate('studentID', 'firstName lastName studentID')
     .populate({path: 'sessionID', 
               match: {
                   sessionTime: {
@@ -291,8 +305,15 @@ router.get('/fromDtoD', async (req, res) => {
                       path: 'tutorID',
                       select: 'firstName lastName'
               }});
-    //Loop to remove any record without valid session (session = null)
-    const filterRecords = attendanceRecords.filter(record => record.sessionID !== null);
+    // Keep sessions whose populated session is in range, and walk-ins by their check-in time.
+    const filterRecords = attendanceRecords.filter(record => {
+      if (record.visitType === "Walk-In") {
+        const walkInDate = new Date(record.checkInTime || record.createdAt);
+        return walkInDate >= start && walkInDate <= end;
+      }
+
+      return record.sessionID !== null;
+    });
     res.json(filterRecords);  //Return the data back to the browser client
   } catch (error) { //Handle error
       console.error("Error fetching attendance records:", error);
@@ -324,6 +345,85 @@ router.post('/check', async (req, res) => {
   } catch (error) {
     console.error("Error checking card:", error);
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+});
+
+router.post('/walk-in', async (req, res) => {
+  const { idInput, cardID, firstName, lastName, studentID } = req.body;
+  const idNumber = getIdNumberFromSwipe({ idInput, cardID, studentID });
+
+  try {
+    if (!idNumber) {
+      return res.status(400).json({ success: false, message: 'Student ID is required.' });
+    }
+
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const openWalkIn = await Attendance.findOne({
+      visitType: "Walk-In",
+      studentIdNumber: idNumber,
+      checkInTime: { $gte: startOfDay, $lte: endOfDay },
+      $or: [
+        { checkOutTime: { $exists: false } },
+        { checkOutTime: null }
+      ]
+    }).sort({ checkInTime: -1, createdAt: -1 });
+
+    if (openWalkIn) {
+      const duration = Math.max(1, Math.round((now - openWalkIn.checkInTime) / 60000));
+
+      openWalkIn.checkOutTime = now;
+      openWalkIn.duration = duration;
+      openWalkIn.updatedAt = now;
+      await openWalkIn.save();
+
+      await logCardSwipeAttempt({
+        cardID: cardID || idInput || studentID,
+        cardFormat: cardID ? 'Track1' : (studentID ? 'Track2' : 'Manual'),
+        firstName,
+        lastName,
+        studentID: idNumber
+      }, true, null, "Walk-In");
+
+      return res.status(200).json({
+        success: true,
+        action: "check-out",
+        message: `Walk-in ID ${idNumber} checked out. Duration: ${duration} minutes.`,
+        attendance: openWalkIn
+      });
+    }
+
+    const attendance = new Attendance({
+      visitType: "Walk-In",
+      studentIdNumber: idNumber,
+      checkInTime: now,
+      checkInStatus: "On Time",
+      checkOutStatus: "On Time",
+      wasNoShow: false
+    });
+
+    await attendance.save();
+    await logCardSwipeAttempt({
+      cardID: cardID || idInput || studentID,
+      cardFormat: cardID ? 'Track1' : (studentID ? 'Track2' : 'Manual'),
+      firstName,
+      lastName,
+      studentID: idNumber
+    }, true, null, "Walk-In");
+
+    return res.status(201).json({
+      success: true,
+      action: "check-in",
+      message: `Walk-in ID ${idNumber} checked in.`,
+      attendance
+    });
+  } catch (error) {
+    console.error('Error in walk-in attendance:', error);
+    return res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
