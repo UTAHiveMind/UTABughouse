@@ -4,7 +4,7 @@ import styles from "../../styles/AttendanceReport.module.css";
 import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
 import { useNavigate } from "react-router-dom";
-import { FaFileCsv } from "react-icons/fa";
+import { FaEdit, FaFileCsv, FaSave, FaTimes, FaTrash } from "react-icons/fa";
 
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
 const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || "localhost";
@@ -16,6 +16,17 @@ const attendanceCache = {
   timestamp: null,
   cacheDuration: 5 * 60 * 1000
 };
+
+const CHECK_IN_STATUS_OPTIONS = ["Early", "On Time", "Late", "No Show", "Cancelled"];
+const CHECK_OUT_STATUS_OPTIONS = [
+  "Early",
+  "On Time",
+  "Late",
+  "No Show",
+  "Cancelled",
+  "Timed Out"
+];
+const TYPE_OPTIONS = ["Session", "Walk-In"];
 
 function calculateEndTime(startTime, duration) {
   if (!startTime || !duration) return "N/A";
@@ -102,6 +113,22 @@ function formatDateTime(isoString) {
   }
 }
 
+function toDateTimeLocalValue(isoString) {
+  if (!isoString) return "";
+
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return "";
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocalValue(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 function AttendanceReport() {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [allSessionsCount, setAllSessionsCount] = useState(0);
@@ -110,6 +137,12 @@ function AttendanceReport() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteInProgressId, setDeleteInProgressId] = useState(null);
+  const [actionError, setActionError] = useState(null);
+  const [tutorOptions, setTutorOptions] = useState([]);
 
   const { isCollapsed } = useSidebar();
   const navigate = useNavigate();
@@ -129,6 +162,21 @@ function AttendanceReport() {
   if (end) {
     end.setHours(23, 59, 59, 999);
   }
+
+  useEffect(() => {
+    const fetchTutors = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/users/tutors`, {
+          withCredentials: true
+        });
+        setTutorOptions(response.data || []);
+      } catch (tutorError) {
+        console.error("Error fetching tutors for attendance editor:", tutorError);
+      }
+    };
+
+    fetchTutors();
+  }, []);
 
   const fetchAttendance = useCallback(async () => {
     try {
@@ -222,14 +270,19 @@ function AttendanceReport() {
             ? "Walk-In Student"
             : "Unknown Student";
 
-          const tutorName =
-            record.sessionID && record.sessionID.tutorID
+          const tutorName = record.tutorID
+            ? `${record.tutorID.firstName || ""} ${
+                record.tutorID.lastName || ""
+              }`.trim()
+            : record.sessionID && record.sessionID.tutorID
               ? `${record.sessionID.tutorID.firstName || ""} ${
                   record.sessionID.tutorID.lastName || ""
                 }`.trim()
               : "N/A";
 
-          const sessionTime = record.sessionID
+          const tutorId = record.tutorID?._id || record.sessionID?.tutorID?._id || "";
+
+          const sessionTime = record.sessionID && visitType !== "Walk-In"
             ? record.sessionID.sessionTime
             : record.checkInTime || record.createdAt;
 
@@ -254,6 +307,7 @@ function AttendanceReport() {
             studentIdNumber,
             studentName,
             tutorName,
+            tutorId,
             rawDateTime: rawDate,
             date: formattedDate,
             startTime: visitType === "Walk-In" ? "N/A" : time,
@@ -269,11 +323,15 @@ function AttendanceReport() {
                   ),
             checkInTime: checkInDateTime.time,
             checkOutTime: checkOutDateTime.time,
+            rawCheckInTime: record.checkInTime || "",
+            rawCheckOutTime: record.checkOutTime || "",
             checkInStatus: record.checkInStatus || "N/A",
             checkOutStatus: record.checkOutStatus || "N/A",
             wasNoShow: record.wasNoShow,
             status:
-              visitType === "Walk-In" && record.checkOutTime
+              record.checkOutStatus === "Timed Out"
+                ? "Timed Out"
+                : visitType === "Walk-In" && record.checkOutTime
                 ? "Completed"
                 : visitType === "Walk-In" && record.checkInTime
                 ? "In Progress"
@@ -492,6 +550,105 @@ function AttendanceReport() {
     fetchAttendance();
   };
 
+  const openEditModal = (record) => {
+    setActionError(null);
+    setEditingRecord(record);
+    setEditForm({
+      type: TYPE_OPTIONS.includes(record.type) ? record.type : "Session",
+      tutorID: record.tutorId || "",
+      studentIdNumber: record.studentIdNumber === "N/A" ? "" : record.studentIdNumber,
+      checkInTime: toDateTimeLocalValue(record.rawCheckInTime),
+      checkOutTime: toDateTimeLocalValue(record.rawCheckOutTime),
+      checkInStatus: CHECK_IN_STATUS_OPTIONS.includes(record.checkInStatus)
+        ? record.checkInStatus
+        : "On Time",
+      checkOutStatus: CHECK_OUT_STATUS_OPTIONS.includes(record.checkOutStatus)
+        ? record.checkOutStatus
+        : "On Time",
+      duration: record.duration === "N/A" ? "" : record.duration,
+      wasNoShow: Boolean(record.wasNoShow)
+    });
+  };
+
+  const closeEditModal = () => {
+    if (savingEdit) return;
+    setEditingRecord(null);
+    setEditForm(null);
+    setActionError(null);
+  };
+
+  const updateEditForm = (field, value) => {
+    setEditForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleSaveEdit = async (event) => {
+    event.preventDefault();
+    if (!editingRecord || !editForm) return;
+
+    try {
+      setSavingEdit(true);
+      setActionError(null);
+
+      await axios.put(
+        `${BACKEND_URL}/api/attendance/${editingRecord.id}`,
+        {
+          visitType: editForm.type,
+          tutorID: editForm.tutorID,
+          studentIdNumber: editForm.studentIdNumber,
+          checkInTime: fromDateTimeLocalValue(editForm.checkInTime),
+          checkOutTime: fromDateTimeLocalValue(editForm.checkOutTime),
+          checkInStatus: editForm.checkInStatus,
+          checkOutStatus: editForm.checkOutStatus,
+          duration: editForm.duration,
+          wasNoShow: editForm.wasNoShow
+        },
+        { withCredentials: true }
+      );
+
+      attendanceCache.data = null;
+      attendanceCache.timestamp = null;
+      setEditingRecord(null);
+      setEditForm(null);
+      await fetchAttendance();
+    } catch (saveError) {
+      setActionError(
+        saveError.response?.data?.message ||
+          "Unable to update attendance entry. Please try again."
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteRecord = async (record) => {
+    const confirmed = window.confirm(
+      `Delete attendance entry for ${record.studentName} on ${record.date}?`
+    );
+    if (!confirmed) return;
+
+    try {
+      setActionError(null);
+      setDeleteInProgressId(record.id);
+      await axios.delete(`${BACKEND_URL}/api/attendance/${record.id}`, {
+        withCredentials: true
+      });
+
+      attendanceCache.data = null;
+      attendanceCache.timestamp = null;
+      await fetchAttendance();
+    } catch (deleteError) {
+      setActionError(
+        deleteError.response?.data?.message ||
+          "Unable to delete attendance entry. Please try again."
+      );
+    } finally {
+      setDeleteInProgressId(null);
+    }
+  };
+
   const formatLastUpdated = (date) => {
     if (!date) return "";
 
@@ -640,6 +797,12 @@ function AttendanceReport() {
             </div>
           </div>
 
+          {actionError && (
+            <div className={styles.inlineError}>
+              <p>{actionError}</p>
+            </div>
+          )}
+
           {loading ? (
             <div className={styles.loadingContainer}>
               <p>Loading attendance data...</p>
@@ -667,6 +830,7 @@ function AttendanceReport() {
                     <th>Check-Out</th>
                     <th>Duration</th>
                     <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
 
@@ -758,6 +922,29 @@ function AttendanceReport() {
                           {record.status}
                         </span>
                       </td>
+
+                      <td className={styles.actionsCell}>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          onClick={() => openEditModal(record)}
+                          title="Edit attendance entry"
+                          aria-label={`Edit attendance entry for ${record.studentName}`}
+                        >
+                          <FaEdit />
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`${styles.iconButton} ${styles.deleteButton}`}
+                          onClick={() => handleDeleteRecord(record)}
+                          disabled={deleteInProgressId === record.id}
+                          title="Delete attendance entry"
+                          aria-label={`Delete attendance entry for ${record.studentName}`}
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -765,6 +952,159 @@ function AttendanceReport() {
             </div>
           )}
         </div>
+
+        {editingRecord && editForm && (
+          <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+            <form className={styles.editModal} onSubmit={handleSaveEdit}>
+              <div className={styles.modalHeader}>
+                <div>
+                  <h3>Edit Attendance</h3>
+                  <p>{editingRecord.studentName}</p>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.closeButton}
+                  onClick={closeEditModal}
+                  aria-label="Close edit dialog"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className={styles.formGrid}>
+                <label className={styles.formField}>
+                  <span>Type</span>
+                  <select
+                    value={editForm.type}
+                    onChange={(e) => updateEditForm("type", e.target.value)}
+                  >
+                    {TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Tutor</span>
+                  <select
+                    value={editForm.tutorID}
+                    onChange={(e) => updateEditForm("tutorID", e.target.value)}
+                  >
+                    <option value="">N/A</option>
+                    {tutorOptions.map((tutor) => (
+                      <option key={tutor._id} value={tutor._id}>
+                        {`${tutor.firstName || ""} ${tutor.lastName || ""}`.trim()}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formField}>
+                  <span>ID#</span>
+                  <input
+                    type="text"
+                    value={editForm.studentIdNumber}
+                    onChange={(e) => updateEditForm("studentIdNumber", e.target.value)}
+                  />
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Check-In Time</span>
+                  <input
+                    type="datetime-local"
+                    value={editForm.checkInTime}
+                    onChange={(e) => updateEditForm("checkInTime", e.target.value)}
+                  />
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Check-Out Time</span>
+                  <input
+                    type="datetime-local"
+                    value={editForm.checkOutTime}
+                    onChange={(e) => updateEditForm("checkOutTime", e.target.value)}
+                  />
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Check-In Status</span>
+                  <select
+                    value={editForm.checkInStatus}
+                    onChange={(e) => updateEditForm("checkInStatus", e.target.value)}
+                  >
+                    {CHECK_IN_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Check-Out Status</span>
+                  <select
+                    value={editForm.checkOutStatus}
+                    onChange={(e) => updateEditForm("checkOutStatus", e.target.value)}
+                  >
+                    {CHECK_OUT_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Duration Minutes</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.duration}
+                    onChange={(e) => updateEditForm("duration", e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <label className={styles.checkboxField}>
+                <input
+                  type="checkbox"
+                  checked={editForm.wasNoShow}
+                  onChange={(e) => updateEditForm("wasNoShow", e.target.checked)}
+                />
+                <span>No Show</span>
+              </label>
+
+              {actionError && (
+                <div className={styles.modalError}>
+                  <p>{actionError}</p>
+                </div>
+              )}
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={closeEditModal}
+                  disabled={savingEdit}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={savingEdit}
+                >
+                  <FaSave />
+                  {savingEdit ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

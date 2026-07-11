@@ -6,6 +6,137 @@ const Session = require('../models/Session');
 const User = require('../models/User');
 const TutorProfile = require('../models/TutorProfile');
 const CardSwipeLog = require('../models/CardSwipeLog');
+const BugHouse = require('../models/BugHouse');
+const {
+  DEFAULT_CENTER_AVAILABILITY,
+  normalizeCenterAvailability,
+} = require('../utils/centerAvailability');
+
+const CHECK_IN_STATUSES = ['Early', 'On Time', 'Late', 'No Show', 'Cancelled'];
+const CHECK_OUT_STATUSES = ['Early', 'On Time', 'Late', 'No Show', 'Cancelled', 'Timed Out'];
+const VISIT_TYPES = ['Session', 'Walk-In'];
+const TIMEOUT_SWEEP_INTERVAL_MS = 60 * 1000;
+
+function requireAdmin(req, res, next) {
+  if (req.session?.user?.role !== 'Admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required.' });
+  }
+
+  return next();
+}
+
+function getDayName(date) {
+  return date.toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+function getClosingDateForAttendance(checkInTime, centerAvailability) {
+  const checkInDate = new Date(checkInTime);
+  if (isNaN(checkInDate.getTime())) return null;
+
+  const dayName = getDayName(checkInDate);
+  const slot = normalizeCenterAvailability(centerAvailability).find(
+    (availability) => availability.day === dayName
+  );
+
+  if (!slot || !slot.enabled || !slot.endTime) return null;
+
+  const [hours, minutes] = slot.endTime.split(':').map(Number);
+  const closingDate = new Date(checkInDate);
+  closingDate.setHours(hours, minutes, 0, 0);
+
+  return closingDate;
+}
+
+async function getCenterAvailabilitySettings() {
+  const settings = await BugHouse.findOne();
+  return normalizeCenterAvailability(
+    settings?.centerAvailability || DEFAULT_CENTER_AVAILABILITY
+  );
+}
+
+async function timeoutOpenStudentAttendance(now = new Date()) {
+  const centerAvailability = await getCenterAvailabilitySettings();
+  const openRecords = await Attendance.find({
+    checkInTime: { $exists: true, $ne: null },
+    $and: [
+      {
+        $or: [
+          { checkOutTime: { $exists: false } },
+          { checkOutTime: null }
+        ]
+      },
+      {
+        $or: [
+          { studentID: { $exists: true, $ne: null } },
+          { visitType: 'Walk-In' }
+        ]
+      }
+    ]
+  });
+
+  const updates = openRecords.map(async (record) => {
+    const closingDate = getClosingDateForAttendance(record.checkInTime, centerAvailability);
+
+    if (!closingDate || now <= closingDate || new Date(record.checkInTime) > closingDate) {
+      return null;
+    }
+
+    record.checkOutTime = closingDate;
+    record.duration = Math.max(
+      1,
+      Math.round((closingDate - new Date(record.checkInTime)) / 60000)
+    );
+    record.checkOutStatus = 'Timed Out';
+    record.updatedAt = now;
+    return record.save();
+  });
+
+  const results = await Promise.all(updates);
+  return results.filter(Boolean).length;
+}
+
+let timeoutSweepInProgress = false;
+
+if (process.env.NODE_ENV !== 'test') {
+  const timeoutSweep = setInterval(async () => {
+    if (timeoutSweepInProgress || mongoose.connection.readyState !== 1) return;
+
+    timeoutSweepInProgress = true;
+    try {
+      const timedOutCount = await timeoutOpenStudentAttendance();
+      if (timedOutCount > 0) {
+        console.log(`[AttendanceTimeout] Timed out ${timedOutCount} open attendance record(s).`);
+      }
+    } catch (error) {
+      console.error('[AttendanceTimeout] Error timing out open attendance records:', error);
+    } finally {
+      timeoutSweepInProgress = false;
+    }
+  }, TIMEOUT_SWEEP_INTERVAL_MS);
+
+  if (typeof timeoutSweep.unref === 'function') {
+    timeoutSweep.unref();
+  }
+}
+
+function parseOptionalDate(value, fieldName) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+
+  const date = new Date(value);
+  if (isNaN(date.getTime())) {
+    const error = new Error(`${fieldName} must be a valid date.`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return date;
+}
+
+function calculateDuration(checkInTime, checkOutTime) {
+  if (!checkInTime || !checkOutTime) return undefined;
+  return Math.max(1, Math.round((checkOutTime - checkInTime) / 60000));
+}
 
 async function findUserForSwipe({ cardID, firstName, lastName, studentID }) {
   let user = null;
@@ -118,6 +249,8 @@ async function logCardSwipeAttempt(swipeData, isWelcomeFlow = false, userFound =
 // Shared attendance check-in/out logic
 async function handleAttendanceForUser(user, res) {
   try {
+    await timeoutOpenStudentAttendance();
+
     const now = new Date();
     const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
@@ -257,10 +390,13 @@ async function handleAttendanceForUser(user, res) {
 // GET all attendance records
 router.get('/all', async (req, res) => {
   try {
+    await timeoutOpenStudentAttendance();
+
     const attendanceRecords = await Attendance.find()
       .sort({ createdAt: -1 })  //Show newest records first
       .limit(50)                //Limit initial results to 50 records for better performance
       .populate('studentID', 'firstName lastName studentID')
+      .populate('tutorID', 'firstName lastName')
       .populate({
         path: 'sessionID',
         populate: { path: 'tutorID', select: 'firstName lastName' }
@@ -278,6 +414,8 @@ router.get('/all', async (req, res) => {
 //Get Attendance records within a date range
 router.get('/fromDtoD', async (req, res) => {
   try {
+    await timeoutOpenStudentAttendance();
+
     const {fromDate, toDate} = req.query; //Extract query parameters from URL to get fromDate and toDate
 
     //Convert string to date object
@@ -295,6 +433,7 @@ router.get('/fromDtoD', async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(500)   // Increase limit for filtered queries to avoid missing results
     .populate('studentID', 'firstName lastName studentID')
+    .populate('tutorID', 'firstName lastName')
     .populate({path: 'sessionID', 
               match: {
                   sessionTime: {
@@ -321,6 +460,154 @@ router.get('/fromDtoD', async (req, res) => {
         message: 'Error fetching attendance records',
         error: error.message
       });
+  }
+});
+
+router.put('/:attendanceId', requireAdmin, async (req, res) => {
+  try {
+    const { attendanceId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(attendanceId)) {
+      return res.status(400).json({ success: false, message: 'Invalid attendance ID.' });
+    }
+
+    const attendance = await Attendance.findById(attendanceId);
+    if (!attendance) {
+      return res.status(404).json({ success: false, message: 'Attendance entry not found.' });
+    }
+
+    const {
+      studentIdNumber,
+      checkInTime,
+      checkOutTime,
+      checkInStatus,
+      checkOutStatus,
+      visitType,
+      tutorID,
+      duration,
+      wasNoShow,
+    } = req.body;
+
+    const parsedCheckIn = parseOptionalDate(checkInTime, 'checkInTime');
+    const parsedCheckOut = parseOptionalDate(checkOutTime, 'checkOutTime');
+
+    if (parsedCheckIn !== undefined) attendance.checkInTime = parsedCheckIn;
+    if (parsedCheckOut !== undefined) attendance.checkOutTime = parsedCheckOut;
+
+    if (
+      attendance.checkInTime &&
+      attendance.checkOutTime &&
+      attendance.checkOutTime < attendance.checkInTime
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Check-out time cannot be before check-in time.'
+      });
+    }
+
+    if (studentIdNumber !== undefined) {
+      attendance.studentIdNumber = normalizeIdNumber(studentIdNumber);
+    }
+
+    if (visitType !== undefined) {
+      if (!VISIT_TYPES.includes(visitType)) {
+        return res.status(400).json({ success: false, message: 'Invalid attendance type.' });
+      }
+      attendance.visitType = visitType;
+    }
+
+    if (tutorID !== undefined) {
+      if (tutorID === null || tutorID === '') {
+        attendance.tutorID = undefined;
+      } else {
+        if (!mongoose.Types.ObjectId.isValid(tutorID)) {
+          return res.status(400).json({ success: false, message: 'Invalid tutor ID.' });
+        }
+
+        const tutor = await User.findOne({ _id: tutorID, role: 'Tutor' });
+        if (!tutor) {
+          return res.status(400).json({ success: false, message: 'Selected tutor was not found.' });
+        }
+
+        attendance.tutorID = tutor._id;
+      }
+    }
+
+    if (checkInStatus !== undefined) {
+      if (!CHECK_IN_STATUSES.includes(checkInStatus)) {
+        return res.status(400).json({ success: false, message: 'Invalid check-in status.' });
+      }
+      attendance.checkInStatus = checkInStatus;
+    }
+
+    if (checkOutStatus !== undefined) {
+      if (!CHECK_OUT_STATUSES.includes(checkOutStatus)) {
+        return res.status(400).json({ success: false, message: 'Invalid check-out status.' });
+      }
+      attendance.checkOutStatus = checkOutStatus;
+    }
+
+    if (wasNoShow !== undefined) {
+      attendance.wasNoShow = Boolean(wasNoShow);
+    }
+
+    if (duration !== undefined && duration !== '') {
+      const numericDuration = Number(duration);
+      if (!Number.isFinite(numericDuration) || numericDuration < 0) {
+        return res.status(400).json({ success: false, message: 'Duration must be a positive number.' });
+      }
+      attendance.duration = Math.round(numericDuration);
+    } else {
+      const calculatedDuration = calculateDuration(attendance.checkInTime, attendance.checkOutTime);
+      if (calculatedDuration !== undefined) attendance.duration = calculatedDuration;
+    }
+
+    attendance.updatedAt = new Date();
+    await attendance.save();
+
+    const updatedAttendance = await Attendance.findById(attendance._id)
+      .populate('studentID', 'firstName lastName studentID')
+      .populate('tutorID', 'firstName lastName')
+      .populate({
+        path: 'sessionID',
+        populate: { path: 'tutorID', select: 'firstName lastName' }
+      });
+
+    return res.json({
+      success: true,
+      message: 'Attendance entry updated.',
+      attendance: updatedAttendance
+    });
+  } catch (error) {
+    console.error('Error updating attendance entry:', error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Error updating attendance entry'
+    });
+  }
+});
+
+router.delete('/:attendanceId', requireAdmin, async (req, res) => {
+  try {
+    const { attendanceId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(attendanceId)) {
+      return res.status(400).json({ success: false, message: 'Invalid attendance ID.' });
+    }
+
+    const deletedAttendance = await Attendance.findByIdAndDelete(attendanceId);
+    if (!deletedAttendance) {
+      return res.status(404).json({ success: false, message: 'Attendance entry not found.' });
+    }
+
+    return res.json({ success: true, message: 'Attendance entry deleted.' });
+  } catch (error) {
+    console.error('Error deleting attendance entry:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error deleting attendance entry',
+      error: error.message
+    });
   }
 });
 
@@ -353,6 +640,8 @@ router.post('/walk-in', async (req, res) => {
   const idNumber = getIdNumberFromSwipe({ idInput, cardID, studentID });
 
   try {
+    await timeoutOpenStudentAttendance();
+
     if (!idNumber) {
       return res.status(400).json({ success: false, message: 'Student ID is required.' });
     }

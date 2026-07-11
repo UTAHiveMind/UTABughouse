@@ -38,7 +38,7 @@ const attendanceSchema = new mongoose.Schema({
     },
     checkOutStatus: {
         type: String,
-        enum: ['Early', 'On Time', 'Late', 'No Show', 'Cancelled'],
+        enum: ['Early', 'On Time', 'Late', 'No Show', 'Cancelled', 'Timed Out'],
         default: 'On Time'
     },
     wasNoShow: {
