@@ -5,6 +5,7 @@ import AdminSideBar from "../../components/Sidebar/AdminSidebar";
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
 import { useNavigate } from "react-router-dom";
 import { FaEdit, FaFileCsv, FaSave, FaTimes, FaTrash } from "react-icons/fa";
+import { getAttendanceSummaryMetrics } from "./attendanceReportUtils";
 
 const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
 const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || "localhost";
@@ -134,6 +135,8 @@ function AttendanceReport() {
   const [allSessionsCount, setAllSessionsCount] = useState(0);
   const [lastMonthCount, setLastMonthCount] = useState(0);
   const [noShowCount, setNoShowCount] = useState(0);
+  const [totalStudentVisits, setTotalStudentVisits] = useState(0);
+  const [uniqueStudentCount, setUniqueStudentCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -355,6 +358,10 @@ function AttendanceReport() {
           }
         });
 
+        const summaryMetrics = getAttendanceSummaryMetrics(processedRecords);
+        setTotalStudentVisits(summaryMetrics.totalStudentVisits);
+        setUniqueStudentCount(summaryMetrics.uniqueStudentCount);
+
         console.log("Processed attendance records:", processedRecords);
 
         if (!fromDate && !toDate) {
@@ -452,6 +459,9 @@ function AttendanceReport() {
         setAllSessionsCount(sampleRecords.length + 5);
         setLastMonthCount(sampleRecords.length + 3);
         setNoShowCount(1);
+        const sampleSummaryMetrics = getAttendanceSummaryMetrics(sampleRecords);
+        setTotalStudentVisits(sampleSummaryMetrics.totalStudentVisits);
+        setUniqueStudentCount(sampleSummaryMetrics.uniqueStudentCount);
         setLoading(false);
       }
     } catch (generalError) {
@@ -767,6 +777,20 @@ function AttendanceReport() {
               <h3 className={styles.statTitle}>No-Show Sessions</h3>
               <p className={styles.statValue}>
                 {loading ? "..." : noShowCount}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <h3 className={styles.statTitle}>Unique Students</h3>
+              <p className={styles.statValue}>
+                {loading ? "..." : uniqueStudentCount}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <h3 className={styles.statTitle}>Total Student Visits</h3>
+              <p className={styles.statValue}>
+                {loading ? "..." : totalStudentVisits}
               </p>
             </div>
           </div>
