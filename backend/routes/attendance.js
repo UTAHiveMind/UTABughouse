@@ -503,4 +503,15 @@ router.get('/debug-notifications', async (req, res) => {
   }
 });
 
+// TEMPORARY - for debugging
+router.get('/debug-tutor/:studentID', async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const user = await User.findOne({ studentID: req.params.studentID });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
