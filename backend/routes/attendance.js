@@ -479,4 +479,17 @@ router.get('/swipes/range', async (req, res) => {
   }
 });
 
+const { getTutorShiftStatus } = require('../utils/checkTutorAttendance');
+
+// GET current shift status for all tutors (who's clocked in / missing)
+router.get('/tutor-shift-status', async (req, res) => {
+  try {
+    const statuses = await getTutorShiftStatus();
+    res.json({ success: true, data: statuses });
+  } catch (error) {
+    console.error('Error checking tutor shift status:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;

@@ -13,7 +13,7 @@ const notificationschema = new mongoose.Schema({
     sessionId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Session',
-        required: true
+        // removed required: true
     },
     isRead: {
         type: Boolean,
