@@ -181,12 +181,17 @@ function AttendanceReport() {
           ? `${BACKEND_URL}/api/attendance/fromDtoD`
           : `${BACKEND_URL}/api/attendance/all`;
 
-        const attendanceResponse = await axios.get(endpoint, { params });
+        const attendanceResponse = await axios.get(endpoint, {
+          params,
+          withCredentials: true
+        });
         let attendanceList = attendanceResponse.data || [];
 
         console.log("Raw attendance data:", attendanceList);
 
-        const sessionsResponse = await axios.get(`${BACKEND_URL}/api/sessions`);
+        const sessionsResponse = await axios.get(`${BACKEND_URL}/api/sessions`, {
+          withCredentials: true
+        });
         const sessionsList = sessionsResponse.data || [];
 
         setAllSessionsCount(sessionsList.length);
@@ -211,10 +216,14 @@ function AttendanceReport() {
         setNoShowCount(noShows.length);
 
         const processedRecords = attendanceList.map((record) => {
+          const isWalkIn = record.visitType === "Walk-In" || !record.sessionID;
+
           const studentName = record.studentID
             ? `${record.studentID.firstName || ""} ${
                 record.studentID.lastName || ""
               }`.trim()
+            : record.studentIdNumber
+            ? `Student ID ${record.studentIdNumber}`
             : "Unknown Student";
 
           const tutorName =
@@ -222,13 +231,14 @@ function AttendanceReport() {
               ? `${record.sessionID.tutorID.firstName || ""} ${
                   record.sessionID.tutorID.lastName || ""
                 }`.trim()
+              : isWalkIn
+              ? "Walk-In"
               : "Unknown Tutor";
 
-          const sessionTime = record.sessionID
-            ? record.sessionID.sessionTime
-            : null;
+          const sessionTime =
+            record.sessionID?.sessionTime || record.checkInTime || record.createdAt;
 
-          const rawDate = new Date(record.sessionID.sessionTime);
+          const rawDate = sessionTime ? new Date(sessionTime) : null;
           const { date, time } = formatDateTime(sessionTime);
 
           let formattedDate = date;
@@ -276,11 +286,9 @@ function AttendanceReport() {
         });
 
         processedRecords.sort((a, b) => {
-          try {
-            return new Date(b.date) - new Date(a.date);
-          } catch (error) {
-            return 0;
-          }
+          const aTime = a.rawDateTime instanceof Date ? a.rawDateTime.getTime() : 0;
+          const bTime = b.rawDateTime instanceof Date ? b.rawDateTime.getTime() : 0;
+          return bTime - aTime;
         });
 
         console.log("Processed attendance records:", processedRecords);
