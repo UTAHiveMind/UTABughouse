@@ -1,13 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../../components/Sidebar/AdminSidebar';
 import styles from '../../styles/AdminHome.module.css';
 import { useSidebar } from "../../components/Sidebar/SidebarContext";
 
+const PROTOCOL = process.env.REACT_APP_PROTOCOL || 'https';
+const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || 'localhost';
+const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || '4000';
+const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
 
 function AdminHome({ user }) {
+  const [tutorStatuses, setTutorStatuses] = useState([]);
   const navigate = useNavigate();
   const { isCollapsed } = useSidebar();
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/attendance/tutor-shift-status`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setTutorStatuses(data.data);
+      })
+      .catch((err) => console.error('Error fetching tutor shift status:', err));
+  }, []);
+
   return (
     <div className={styles.container}>
       {/* Sidebar */}
@@ -21,6 +36,23 @@ function AdminHome({ user }) {
           <h1>Admin Dashboard</h1>
           <p>Welcome to the administration panel. Manage your educational platform from here.</p>
         </div>
+
+        <div className={styles.pageHeader}>
+          <h2>Tutors On Shift Right Now</h2>
+        </div>
+        <ul>
+          {tutorStatuses.length === 0 && <li>No tutors currently scheduled.</li>}
+          {tutorStatuses.map((tutorStatus) => (
+            <li
+              key={`${tutorStatus.tutorId}-${tutorStatus.shift.startTime}`}
+              style={{ color: tutorStatus.isLate ? 'red' : 'green' }}
+            >
+              {tutorStatus.tutorName} - {tutorStatus.clockedIn
+                ? `Clocked in at ${new Date(tutorStatus.clockInTime).toLocaleTimeString()}`
+                : 'Not clocked in'}
+            </li>
+          ))}
+        </ul>
         
         <div className={styles.cardsContainer}>
           {/* User Management Card */}

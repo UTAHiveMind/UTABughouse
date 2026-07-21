@@ -7,6 +7,7 @@ const User = require('../models/User');
 const TutorProfile = require('../models/TutorProfile');
 const CardSwipeLog = require('../models/CardSwipeLog');
 const BugHouse = require('../models/BugHouse');
+const { getTutorShiftStatus } = require('../utils/checkTutorAttendance');
 const {
   DEFAULT_CENTER_AVAILABILITY,
   normalizeCenterAvailability,
@@ -865,6 +866,17 @@ router.get('/swipes/range', async (req, res) => {
       message: 'Error fetching card swipe logs',
       error: error.message
     });
+  }
+});
+
+// GET current shift status for all tutors and notify admins when a tutor misses check-in.
+router.get('/tutor-shift-status', async (req, res) => {
+  try {
+    const statuses = await getTutorShiftStatus();
+    res.json({ success: true, data: statuses });
+  } catch (error) {
+    console.error('Error checking tutor shift status:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 

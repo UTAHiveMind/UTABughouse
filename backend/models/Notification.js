@@ -12,8 +12,7 @@ const notificationschema = new mongoose.Schema({
     }, // Notification message
     sessionId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Session',
-        required: true
+        ref: 'Session'
     },
     isRead: {
         type: Boolean,
