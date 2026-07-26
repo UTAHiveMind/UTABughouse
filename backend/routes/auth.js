@@ -92,7 +92,7 @@ router.post('/signup', async (req, res) => {
 
 // Handle the login POST request
 router.post('/login', async (req, res) => {
-    console.log('Login request received with body:', req.body);
+    console.log('Login request received for:', req.body?.email || '<missing email>');
 
     // Validate request data
     if (!req.body || !req.body.email || !req.body.password) {

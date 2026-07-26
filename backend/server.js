@@ -12,6 +12,7 @@ const mongoose = require('mongoose');
 const https = require('https');
 const http = require('http');
 const fs = require('fs');
+const dns = require('dns');
 
 const app = express();
 
@@ -129,9 +130,37 @@ if (!MONGO_URI) {
     process.exit(1);
 }
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch((err) => console.error('Error connecting to MongoDB:', err.message));
+// mongodb+srv requires Node's DNS resolver to perform an SRV lookup. On some
+// Windows installations Node is given only a non-working loopback DNS server,
+// even though Windows itself can resolve the hostname.
+if (MONGO_URI.startsWith('mongodb+srv://')) {
+    const configuredDnsServers = dns.getServers();
+    const onlyLoopbackDns = configuredDnsServers.length > 0 &&
+        configuredDnsServers.every((server) =>
+            server === '127.0.0.1' || server === '::1'
+        );
+
+    if (onlyLoopbackDns) {
+        const fallbackDnsServers = (process.env.DNS_SERVERS || '1.1.1.1,8.8.8.8')
+            .split(',')
+            .map((server) => server.trim())
+            .filter(Boolean);
+        dns.setServers(fallbackDnsServers);
+        console.warn(`Node DNS was set to loopback only; using ${fallbackDnsServers.join(', ')} for MongoDB SRV lookup.`);
+    }
+}
+
+async function startApplication() {
+    try {
+        await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 });
+        console.log('Connected to MongoDB');
+    } catch (err) {
+        console.error('Unable to connect to MongoDB. The backend was not started.');
+        console.error(err.message);
+        console.error('Check the MongoDB URI, Atlas Network Access allowlist, VPN, and firewall settings.');
+        process.exitCode = 1;
+        return;
+    }
 
 // === Start the Server ===
 const sslFolderPath = "./ssl";
@@ -201,3 +230,6 @@ if (USE_HTTPS) {
         console.log(`CORS enabled for origin: ${FRONTEND_URL}`);
     });
 }
+}
+
+startApplication();
