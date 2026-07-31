@@ -303,27 +303,25 @@ function AttendanceReport() {
           const checkInDateTime = formatDateTime(record.checkInTime);
           const checkOutDateTime = formatDateTime(record.checkOutTime);
 
+          const isWalkIn = visitType === "Walk-In";
+          const hasCheckOut = Boolean(record.checkOutTime);
+
           return {
             id: record._id || "N/A",
             sessionId: record.sessionID ? record.sessionID._id : "N/A",
-            type: visitType === "Walk-In" ? "Walk-In" : "Session",
+            type: isWalkIn ? "Walk-In" : "Session",
             studentIdNumber,
             studentName,
             tutorName,
             tutorId,
             rawDateTime: rawDate,
             date: formattedDate,
-            startTime: visitType === "Walk-In" ? "N/A" : time,
-            duration: record.sessionID
-              ? record.sessionID.duration
-              : record.duration || "N/A",
-            endTime:
-              visitType === "Walk-In"
-                ? "N/A"
-                : calculateEndTime(
-                    time,
-                    record.sessionID ? record.sessionID.duration : record.duration
-                  ),
+            startTime: isWalkIn ? checkInDateTime.time : time,
+            duration: record.duration || (record.sessionID ? record.sessionID.duration : "N/A"),
+            endTime: isWalkIn ? (hasCheckOut ? checkOutDateTime.time : "N/A") : calculateEndTime(
+              time,
+              record.sessionID ? record.sessionID.duration : record.duration
+            ),
             checkInTime: checkInDateTime.time,
             checkOutTime: checkOutDateTime.time,
             rawCheckInTime: record.checkInTime || "",
@@ -334,9 +332,9 @@ function AttendanceReport() {
             status:
               record.checkOutStatus === "Timed Out"
                 ? "Timed Out"
-                : visitType === "Walk-In" && record.checkOutTime
+                : isWalkIn && hasCheckOut
                 ? "Completed"
-                : visitType === "Walk-In" && record.checkInTime
+                : isWalkIn && record.checkInTime
                 ? "In Progress"
                 : record.sessionID && record.sessionID.status === "Cancelled"
                 ? "Cancelled"

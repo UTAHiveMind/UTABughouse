@@ -203,7 +203,7 @@ function normalizeIdNumber(value) {
 }
 
 function getIdNumberFromSwipe({ idInput, cardID, studentID }) {
-  return normalizeIdNumber(studentID || cardID || idInput);
+  return normalizeIdNumber(studentID || idInput);
 }
 
 // Helper function to log card swipes (for any swipe attempt, even if user not found)
@@ -617,15 +617,24 @@ router.post('/check', async (req, res) => {
 
   try {
     const user = await findUserForSwipe({ cardID, firstName, lastName, studentID });
+    const cardFormat = cardID ? 'Track1' : studentID ? 'Track2' : 'Manual';
 
     if (!user) {
       // Log the failed attempt (for audit trail)
-      await logCardSwipeAttempt({ cardID, cardFormat: 'Track1', firstName, lastName, studentID }, false, null);
+      await logCardSwipeAttempt(
+        { cardID, cardFormat, firstName, lastName, studentID },
+        false,
+        null
+      );
       return res.status(404).json({ success: false, message: "User not found." });
     }
 
     // Log the card swipe
-    await logCardSwipeAttempt({ cardID, cardFormat: 'Track1' }, false, user);
+    await logCardSwipeAttempt(
+      { cardID, cardFormat, firstName, lastName, studentID },
+      false,
+      user
+    );
 
     return await handleAttendanceForUser(user, res);
 
@@ -643,7 +652,10 @@ router.post('/walk-in', async (req, res) => {
     await timeoutOpenStudentAttendance();
 
     if (!idNumber) {
-      return res.status(400).json({ success: false, message: 'Student ID is required.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Swipe does not contain a student ID. Please swipe again with the full ID track.'
+      });
     }
 
     const now = new Date();
@@ -652,15 +664,33 @@ router.post('/walk-in', async (req, res) => {
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const openWalkIn = await Attendance.findOne({
-      visitType: "Walk-In",
-      studentIdNumber: idNumber,
+    const user = idNumber ? await findUserForIdInput(idNumber) : null;
+    const studentIdNumber = user?.studentID || idNumber;
+    const studentObjectId = user?.role === 'Student' ? user._id : undefined;
+
+    const openWalkInQuery = {
+      visitType: 'Walk-In',
       checkInTime: { $gte: startOfDay, $lte: endOfDay },
-      $or: [
-        { checkOutTime: { $exists: false } },
-        { checkOutTime: null }
+      $and: [
+        {
+          $or: [
+            ...(studentObjectId ? [{ studentID: studentObjectId }] : []),
+            { studentIdNumber }
+          ]
+        },
+        {
+          $or: [
+            { checkOutTime: { $exists: false } },
+            { checkOutTime: null }
+          ]
+        }
       ]
-    }).sort({ checkInTime: -1, createdAt: -1 });
+    };
+
+    const openWalkIn = await Attendance.findOne(openWalkInQuery)
+      .sort({ checkInTime: -1, createdAt: -1 });
+
+    const swipeFormat = cardID ? 'Track1' : studentID ? 'Track2' : 'Manual';
 
     if (openWalkIn) {
       const duration = Math.max(1, Math.round((now - openWalkIn.checkInTime) / 60000));
@@ -668,46 +698,53 @@ router.post('/walk-in', async (req, res) => {
       openWalkIn.checkOutTime = now;
       openWalkIn.duration = duration;
       openWalkIn.updatedAt = now;
+      if (!openWalkIn.studentID && studentObjectId) {
+        openWalkIn.studentID = studentObjectId;
+      }
+      if (!openWalkIn.studentIdNumber) {
+        openWalkIn.studentIdNumber = studentIdNumber;
+      }
       await openWalkIn.save();
 
       await logCardSwipeAttempt({
-        cardID: cardID || idInput || studentID,
-        cardFormat: cardID ? 'Track1' : (studentID ? 'Track2' : 'Manual'),
+        cardID: cardID || idNumber,
+        cardFormat: swipeFormat,
         firstName,
         lastName,
-        studentID: idNumber
-      }, true, null, "Walk-In");
+        studentID: studentIdNumber
+      }, true, user || null, 'Walk-In');
 
       return res.status(200).json({
         success: true,
-        action: "check-out",
-        message: `Walk-in ID ${idNumber} checked out. Duration: ${duration} minutes.`,
+        action: 'check-out',
+        message: `Walk-in ID ${studentIdNumber} checked out. Duration: ${duration} minutes.`,
         attendance: openWalkIn
       });
     }
 
     const attendance = new Attendance({
-      visitType: "Walk-In",
-      studentIdNumber: idNumber,
+      visitType: 'Walk-In',
+      studentIdNumber,
+      studentID: studentObjectId,
       checkInTime: now,
-      checkInStatus: "On Time",
-      checkOutStatus: "On Time",
+      checkInStatus: 'On Time',
+      checkOutStatus: 'On Time',
       wasNoShow: false
     });
 
     await attendance.save();
     await logCardSwipeAttempt({
-      cardID: cardID || idInput || studentID,
-      cardFormat: cardID ? 'Track1' : (studentID ? 'Track2' : 'Manual'),
+      cardID: cardID || idNumber,
+      cardFormat: swipeFormat,
       firstName,
       lastName,
-      studentID: idNumber
-    }, true, null, "Walk-In");
+      studentID: studentIdNumber
+    }, true, user || null, 'Walk-In');
 
     return res.status(201).json({
       success: true,
-      action: "check-in",
-      message: `Walk-in ID ${idNumber} checked in.`,
+      action: 'check-in',
+      message: `Walk-in ID ${studentIdNumber} checked in.`,
       attendance
     });
   } catch (error) {

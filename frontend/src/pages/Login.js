@@ -31,6 +31,20 @@ function Login() {
   const swipeBufferRef = useRef("");
   const swipeTimerRef = useRef(null);
 
+  const parseTrack2StudentID = useCallback((rawData) => {
+    const rawSegments = [...rawData.matchAll(/;([^?;]+)/g)].map((match) => match[1].trim());
+    for (let i = rawSegments.length - 1; i >= 0; i -= 1) {
+      const segment = rawSegments[i];
+      const numericPrefix = segment.split('=')[0];
+      if (/^[0-9]+$/.test(numericPrefix)) {
+        return numericPrefix;
+      }
+    }
+
+    const fallbackNumericMatch = rawData.match(/;([0-9]+)(?=[\?;]|$)/);
+    return fallbackNumericMatch ? fallbackNumericMatch[1] : null;
+  }, []);
+
   const parseCardData = useCallback((rawData) => {
     const panMatch = rawData.match(/%B(\d+)\^/);
     if (!panMatch) return null;
@@ -39,16 +53,19 @@ function Login() {
     const rest = rawData.slice(panMatch.index + panMatch[0].length);
     const slashIdx = rest.indexOf("/");
 
+    let firstName = "";
+    let lastName = "";
+
     if (slashIdx !== -1) {
-      const lastName = rest.slice(0, slashIdx).trim();
+      lastName = rest.slice(0, slashIdx).trim();
       const afterSlash = rest.slice(slashIdx + 1);
-      const firstSeg = afterSlash.match(/^([^^;/\r\n]+)/);
-      const firstName = firstSeg ? firstSeg[1].trim().split(/\s+/)[0] : "";
-      return { cardID, firstName, lastName };
+      const firstSeg = afterSlash.match(/^([^\^;/\r\n]+)/);
+      firstName = firstSeg ? firstSeg[1].trim().split(/\s+/)[0] : "";
     }
 
-    return { cardID, firstName: "", lastName: "" };
-  }, []);
+    const studentID = parseTrack2StudentID(rawData);
+    return { cardID, firstName, lastName, studentID };
+  }, [parseTrack2StudentID]);
 
   const submitWalkIn = useCallback(async (payload) => {
     setWalkInLoading(true);
@@ -82,45 +99,31 @@ function Login() {
     }
 
     if (rawData.startsWith(";")) {
-      const idMatch = rawData.match(/^;(\d+)\?/);
-      if (!idMatch) {
+      const studentID = parseTrack2StudentID(rawData);
+      if (!studentID) {
         setWalkInStatus("Invalid student ID swipe format.");
         return;
       }
 
-      submitWalkIn({ studentID: idMatch[1] });
+      submitWalkIn({ studentID });
       return;
     }
 
-    setWalkInStatus("Unrecognized card format.");
-  }, [parseCardData, submitWalkIn]);
+    setWalkInStatus("Unrecognized card swipe format.");
+  }, [parseCardData, parseTrack2StudentID, submitWalkIn]);
 
-  // Check if the user is already authenticated via SSO or session
-  useEffect(() => {
-    async function checkSession() {
-      try {
-        const response = await axiosGetData(`${BACKEND_URL}/api/auth/session`);
-        if (response.user) {
-          navigate("/home"); // Redirect if already logged in
-        }
-      } catch (error) {
-        console.error("Session check failed", error);
-      }
+  const fetchLogo = useCallback(async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/bughouse`);
+      setLogo(response.data.logo);
+    } catch (error) {
+      console.error("Error fetching logo:", error);
     }
-    // Fetch BugHouse settings to get the logo
-    const fetchLogo = async () => {
-      try {
-        const response = await axios.get(`${BACKEND_URL}/api/bughouse`);
-        setLogo(response.data.logo);
-      } catch (error) {
-        console.error("Error fetching logo:", error);
-      }
-    };
+  }, []);
 
+  useEffect(() => {
     fetchLogo();
-
-    checkSession();
-  }, [navigate]);
+  }, [fetchLogo]);
 
   useEffect(() => {
     const resetSwipeBuffer = () => {

@@ -10,6 +10,7 @@ const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
 /** Public Card Swipe welcome banner duration before returning to the swipe UI */
 const WELCOME_FLOW_RESET_MS = 4000;
 const PROFILE_FLOW_RESET_MS = 10000;
+const SWIPE_COMPLETE_WAIT_MS = 400;
 
 function formatNameFromCardParsed({ firstName, lastName }) {
   const f = (firstName || "").trim();
@@ -27,15 +28,22 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
   const [isLoading, setIsLoading] = useState(false);
   const [lastSwipeTime, setLastSwipeTime] = useState(0);
   const inputRef = useRef(null);
-  const manualInputRef = useRef(null);
-  const [showManualInput, setShowManualInput] = useState(false);
-  const [manualID, setManualID] = useState("");
   const resetTimerRef = useRef(null);
+
+  const swipeBufferRef = useRef("");
+  const swipeTimerRef = useRef(null);
 
   const clearResetTimer = useCallback(() => {
     if (resetTimerRef.current) {
       clearTimeout(resetTimerRef.current);
       resetTimerRef.current = null;
+    }
+  }, []);
+
+  const clearSwipeTimer = useCallback(() => {
+    if (swipeTimerRef.current) {
+      clearTimeout(swipeTimerRef.current);
+      swipeTimerRef.current = null;
     }
   }, []);
 
@@ -53,6 +61,25 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
 
   useEffect(() => () => clearResetTimer(), [clearResetTimer]);
 
+  const parseTrack2StudentID = (rawData) => {
+    const rawSegments = [...rawData.matchAll(/;([^?;]+)/g)].map((match) => match[1].trim());
+    for (let i = rawSegments.length - 1; i >= 0; i -= 1) {
+      const segment = rawSegments[i];
+      const numericPrefix = segment.split('=')[0];
+      if (/^[0-9]+$/.test(numericPrefix)) {
+        return numericPrefix;
+      }
+    }
+
+    const fallbackNumericMatch = rawData.match(/;([0-9]+)(?=[\?;]|$)/);
+    if (fallbackNumericMatch) {
+      return fallbackNumericMatch[1];
+    }
+
+    const track1SuffixMatch = rawData.match(/\^([0-9]+)\?/);
+    return track1SuffixMatch ? track1SuffixMatch[1] : null;
+  };
+
   const parseCardData = (rawData) => {
     const panMatch = rawData.match(/%B(\d+)\^/);
     if (!panMatch) return null;
@@ -61,23 +88,41 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
     const rest = rawData.slice(panMatch.index + panMatch[0].length);
     const slashIdx = rest.indexOf("/");
 
+    let firstName = "";
+    let lastName = "";
+
     if (slashIdx !== -1) {
-      const lastName = rest.slice(0, slashIdx).trim();
+      lastName = rest.slice(0, slashIdx).trim();
       const afterSlash = rest.slice(slashIdx + 1);
       const firstSeg = afterSlash.match(/^([^\^;\/\r\n]+)/);
-      const firstName = firstSeg ? firstSeg[1].trim().split(/\s+/)[0] : "";
-      return { cardID, firstName, lastName };
+      firstName = firstSeg ? firstSeg[1].trim().split(/\s+/)[0] : "";
+    } else {
+      const legacy = rawData.match(/%B(\d+)\^([\w\-/ ]+)\^/);
+      if (legacy) {
+        const nameParts = legacy[2].split("/");
+        lastName = nameParts[0]?.trim();
+        firstName = nameParts[1]?.trim()?.split(" ")[0] || "";
+      }
     }
 
-    const legacy = rawData.match(/%B(\d+)\^([\w\-/ ]+)\^/);
-    if (legacy) {
-      const nameParts = legacy[2].split("/");
-      const lastName = nameParts[0]?.trim();
-      const firstName = nameParts[1]?.trim()?.split(" ")[0];
-      return { cardID, firstName, lastName };
+    return { cardID, firstName, lastName };
+  };
+
+  const parseCardSwipeData = (rawData) => {
+    const studentID = parseTrack2StudentID(rawData);
+
+    if (rawData.startsWith("%B")) {
+      const track1 = parseCardData(rawData);
+      if (!track1) return null;
+      return { ...track1, studentID };
     }
 
-    return { cardID, firstName: "", lastName: "" };
+    if (rawData.startsWith(";")) {
+      if (!studentID) return null;
+      return { studentID };
+    }
+
+    return null;
   };
 
   const processCardData = async (rawData) => {
@@ -86,53 +131,41 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
       setWelcomeMessage(null);
       setSessionDetails(null);
 
+      const parsed = parseCardSwipeData(rawData);
+      if (!parsed) {
+        setStatusMessage("Retry Card Swipe");
+        if (welcomeFlow) scheduleUiReset();
+        return;
+      }
+
+      if (welcomeFlow && userRole === "Student" && !parsed.studentID) {
+        setStatusMessage("Retry Card Swipe");
+        scheduleUiReset();
+        return;
+      }
+
       if (welcomeFlow) {
-        setIsLoading(false);
-        if (rawData.startsWith("%B")) {
-          const parsed = parseCardData(rawData);
-          if (!parsed) {
-            setStatusMessage("Invalid card swipe format.");
-            scheduleUiReset();
-            return;
-          }
-          const nameFromCard = formatNameFromCardParsed(parsed);
-          setWelcomeMessage(
-            nameFromCard ? `Welcome to the BugHouse ${nameFromCard}!` : "Welcome to the BugHouse!"
-          );
-          setStatusMessage("");
-          
-          // Log the swipe to the backend
-          try {
-            await axiosPostData(`${BACKEND_URL}/api/attendance/public-welcome`, { ...parsed, userRole });
-          } catch (err) {
-            console.log("Note: User not found in system, but welcome displayed");
-          }
-          
-          scheduleUiReset();
-          return;
+        setIsLoading(true);
+        const endpoint =
+          userRole === "Student"
+            ? `${BACKEND_URL}/api/attendance/walk-in`
+            : `${BACKEND_URL}/api/attendance/check`;
+
+        const response = await axiosPostData(endpoint, parsed);
+        setWelcomeMessage(
+          userRole === "Student"
+            ? "Walk-in attendance recorded."
+            : "Tutor attendance recorded."
+        );
+        setStatusMessage(response.data.message || "Attendance recorded.");
+
+        if (response.data.session) {
+          setSessionDetails(response.data.session);
         }
-        if (rawData.startsWith(";")) {
-          const idMatch = rawData.match(/^;(\d{10})\?/);
-          if (!idMatch) {
-            setStatusMessage("Invalid Track 2 swipe.");
-            scheduleUiReset();
-            return;
-          }
-          const studentID = idMatch[1];
-          setWelcomeMessage("Welcome to the BugHouse!");
-          setStatusMessage("");
-          
-          // Log the swipe to the backend
-          try {
-            await axiosPostData(`${BACKEND_URL}/api/attendance/public-welcome`, { studentID, userRole });
-          } catch (err) {
-            console.log("Note: User not found in system, but welcome displayed");
-          }
-          
-          scheduleUiReset();
-          return;
+        if (response.data.attendance) {
+          setSessionDetails(response.data.attendance);
         }
-        setStatusMessage("Unrecognized card format.");
+
         scheduleUiReset();
         return;
       }
@@ -141,28 +174,7 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
       setIsLoading(true);
 
       const endpoint = `${BACKEND_URL}/api/attendance/check`;
-
-      let response;
-
-      if (rawData.startsWith("%B")) {
-        const parsed = parseCardData(rawData);
-        if (!parsed) {
-          setStatusMessage("Invalid card swipe format.");
-          return;
-        }
-        response = await axiosPostData(endpoint, parsed);
-      } else if (rawData.startsWith(";")) {
-        const idMatch = rawData.match(/^;(\d{10})\?/);
-        if (!idMatch) {
-          setStatusMessage("Invalid Track 2 swipe.");
-          return;
-        }
-        const studentID = idMatch[1];
-        response = await axiosPostData(endpoint, { studentID });
-      } else {
-        setStatusMessage("Unrecognized card format.");
-        return;
-      }
+      const response = await axiosPostData(endpoint, parsed);
 
       setStatusMessage(response.data.message || "Success");
       if (response.data.session) {
@@ -177,6 +189,7 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
       scheduleUiReset();
     }
   };
+
 
   useEffect(() => {
     const keepFocus = () => {
@@ -193,71 +206,32 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
   }, []);
 
   const handleInputChange = (e) => {
-    const value = e.target.value.trim();
-    if (!value || !value.includes("?")) return;
+    const value = e.target.value;
+    if (!value) return;
 
-    const now = Date.now();
-    if (now - lastSwipeTime < 1500) {
-      e.target.value = "";
-      return;
-    }
-
-    setLastSwipeTime(now);
+    swipeBufferRef.current += value;
     e.target.value = "";
-    processCardData(value);
-  };
+    clearSwipeTimer();
 
-  const handleManualCheckIn = async () => {
-    if (!manualID.trim()) return;
+    swipeTimerRef.current = setTimeout(() => {
+      const swipeData = swipeBufferRef.current.trim();
+      swipeBufferRef.current = "";
+      swipeTimerRef.current = null;
 
-    clearResetTimer();
-    try {
-      setWelcomeMessage(null);
-      setIsLoading(true);
-      setStatusMessage(welcomeFlow ? "Processing..." : "Processing manual check-in...");
-      setSessionDetails(null);
-
-      const endpoint = welcomeFlow
-        ? `${BACKEND_URL}/api/attendance/public-welcome`
-        : `${BACKEND_URL}/api/attendance/manual-checkin`;
-
-      const response = await axiosPostData(endpoint, {
-        idInput: manualID.trim(),
-      });
-
-      if (welcomeFlow) {
-        const name =
-          response.data.displayName ||
-          [response.data.firstName, response.data.lastName].filter(Boolean).join(" ").trim();
-        setWelcomeMessage(
-          name ? `Welcome to the BugHouse ${name}!` : "Welcome to the BugHouse!"
-        );
-        setStatusMessage("");
-      } else {
-        setStatusMessage(response.data.message || "Manual check-in successful!");
-        if (response.data.session) {
-          setSessionDetails(response.data.session);
-        }
+      if (!swipeData || !swipeData.includes("?")) {
+        return;
       }
 
-      setManualID("");
-      setShowManualInput(false);
-      if (inputRef.current) inputRef.current.focus();
-    } catch (error) {
-      if (welcomeFlow && error.response?.status === 404) {
-        setWelcomeMessage("Welcome to the BugHouse!");
-        setStatusMessage("");
-      } else {
-        const msg =
-          error.response?.data?.message ||
-          (welcomeFlow ? "Something went wrong. Please try again." : "Error during manual check-in.");
-        setStatusMessage(msg);
+      const now = Date.now();
+      if (now - lastSwipeTime < 1500) {
+        return;
       }
-    } finally {
-      setIsLoading(false);
-      scheduleUiReset();
-    }
+
+      setLastSwipeTime(now);
+      processCardData(swipeData);
+    }, SWIPE_COMPLETE_WAIT_MS);
   };
+
 
   const showWelcome = welcomeFlow && welcomeMessage;
 
@@ -268,8 +242,7 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
         type="text"
         className={styles.hiddenInput}
         onChange={handleInputChange}
-        autoFocus={!showManualInput}
-        disabled={showManualInput}
+        autoFocus
       />
 
       {showWelcome ? (
@@ -283,65 +256,6 @@ function SessionCardSwipeCore({ instruction, welcomeFlow = false, userRole = nul
           {isLoading && <div className={styles.spinner}></div>}
 
           <div className={styles.status}>{statusMessage}</div>
-
-          {!showManualInput ? (
-            <button
-              type="button"
-              onClick={() => {
-                setShowManualInput(true);
-                setStatusMessage("Enter your ID number manually.");
-                setSessionDetails(null);
-                setWelcomeMessage(null);
-                setTimeout(() => manualInputRef.current?.focus(), 0);
-              }}
-              disabled={isLoading}
-              style={{ marginTop: "20px" }}
-              className={styles.manualCheckInButton}
-            >
-              Manual Check-In
-            </button>
-          ) : (
-            <div className={styles.inputIDNav} style={{ marginTop: "20px" }}>
-              <div>
-                              <input
-                ref={manualInputRef}
-                type="text"
-                placeholder="Enter your ID number"
-                value={manualID}
-                onChange={(e) => setManualID(e.target.value)}
-                disabled={isLoading}
-                style={{
-                  padding: "8px",
-                  fontSize: "1rem",
-                  marginRight: "10px",
-                  width: "200px",
-                }}
-              />
-              </div>
-              <div>
-                <button type="button" className={styles.submitButton} onClick={handleManualCheckIn} disabled={isLoading || !manualID.trim()}>
-                  Submit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowManualInput(false);
-                    setManualID("");
-                    setStatusMessage("Awaiting card swipe...");
-                    setSessionDetails(null);
-                    setWelcomeMessage(null);
-                    if (inputRef.current) inputRef.current.focus();
-                  }}
-                  disabled={isLoading}
-                  style={{ marginLeft: "10px" }}
-                  className={styles.cancelButton}
-                >
-                  Cancel
-                </button>
-              </div>
-
-            </div>
-          )}
 
           {sessionDetails && (
             <div className={styles.sessionBox}>
