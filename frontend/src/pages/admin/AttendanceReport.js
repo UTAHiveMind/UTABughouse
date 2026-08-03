@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import styles from "../../styles/AttendanceReport.module.css";
@@ -1135,3 +1136,1140 @@ function AttendanceReport() {
 }
 
 export default AttendanceReport;
+=======
+import React, { useEffect, useState, useCallback } from "react";
+import axios from "axios";
+import styles from "../../styles/AttendanceReport.module.css";
+import AdminSideBar from "../../components/Sidebar/AdminSidebar";
+import { useSidebar } from "../../components/Sidebar/SidebarContext";
+import { useNavigate } from "react-router-dom";
+import { FaEdit, FaFileCsv, FaSave, FaTimes, FaTrash } from "react-icons/fa";
+import { getAttendanceSummaryMetrics } from "./attendanceReportUtils";
+
+const PROTOCOL = process.env.REACT_APP_PROTOCOL || "https";
+const BACKEND_HOST = process.env.REACT_APP_BACKEND_HOST || "localhost";
+const BACKEND_PORT = process.env.REACT_APP_BACKEND_PORT || "4000";
+const BACKEND_URL = `${PROTOCOL}://${BACKEND_HOST}:${BACKEND_PORT}`;
+
+const attendanceCache = {
+  data: null,
+  timestamp: null,
+  cacheDuration: 5 * 60 * 1000
+};
+
+const CHECK_IN_STATUS_OPTIONS = ["Early", "On Time", "Late", "No Show", "Cancelled"];
+const CHECK_OUT_STATUS_OPTIONS = [
+  "Early",
+  "On Time",
+  "Late",
+  "No Show",
+  "Cancelled",
+  "Timed Out"
+];
+const TYPE_OPTIONS = ["Session", "Walk-In"];
+
+function calculateEndTime(startTime, duration) {
+  if (!startTime || !duration) return "N/A";
+
+  try {
+    let durationMinutes = 0;
+
+    if (typeof duration === "string") {
+      if (duration.includes("hour")) {
+        const hourPart = duration.match(/(\d+)\s*hour/);
+        if (hourPart && hourPart[1]) {
+          durationMinutes += parseInt(hourPart[1]) * 60;
+        }
+      }
+
+      const minutePart = duration.match(/(\d+)\s*min/);
+      if (minutePart && minutePart[1]) {
+        durationMinutes += parseInt(minutePart[1]);
+      }
+
+      if (durationMinutes === 0) {
+        const directMinutes = parseInt(duration);
+        if (!isNaN(directMinutes)) {
+          durationMinutes = directMinutes;
+        } else {
+          return "N/A";
+        }
+      }
+    } else if (typeof duration === "number") {
+      durationMinutes = duration;
+    } else {
+      return "N/A";
+    }
+
+    if (typeof startTime !== "string") return "N/A";
+
+    const [time, period] = startTime.split(" ");
+    if (!time || !period) return "N/A";
+
+    let [hours, minutes] = time.split(":").map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return "N/A";
+
+    if (period === "PM" && hours < 12) hours += 12;
+    if (period === "AM" && hours === 12) hours = 0;
+
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    date.setTime(date.getTime() + durationMinutes * 60 * 1000);
+
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  } catch (error) {
+    console.error("Error calculating end time:", error);
+    return "N/A";
+  }
+}
+
+function formatDateTime(isoString) {
+  if (!isoString) return { date: "N/A", time: "N/A" };
+
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return { date: "N/A", time: "N/A" };
+
+    const formattedDate = date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    });
+
+    const formattedTime = date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+
+    return { date: formattedDate, time: formattedTime };
+  } catch (error) {
+    console.error("Error formatting date/time:", error);
+    return { date: "N/A", time: "N/A" };
+  }
+}
+
+function toDateTimeLocalValue(isoString) {
+  if (!isoString) return "";
+
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return "";
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocalValue(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function AttendanceReport() {
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [allSessionsCount, setAllSessionsCount] = useState(0);
+  const [lastMonthCount, setLastMonthCount] = useState(0);
+  const [noShowCount, setNoShowCount] = useState(0);
+  const [totalStudentVisits, setTotalStudentVisits] = useState(0);
+  const [uniqueStudentCount, setUniqueStudentCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteInProgressId, setDeleteInProgressId] = useState(null);
+  const [actionError, setActionError] = useState(null);
+  const [tutorOptions, setTutorOptions] = useState([]);
+
+  const { isCollapsed } = useSidebar();
+  const navigate = useNavigate();
+
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const start = parseLocalDate(fromDate);
+  const end = parseLocalDate(toDate);
+
+  if (end) {
+    end.setHours(23, 59, 59, 999);
+  }
+
+  useEffect(() => {
+    const fetchTutors = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/users/tutors`, {
+          withCredentials: true
+        });
+        setTutorOptions(response.data || []);
+      } catch (tutorError) {
+        console.error("Error fetching tutors for attendance editor:", tutorError);
+      }
+    };
+
+    fetchTutors();
+  }, []);
+
+  const fetchAttendance = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const now = new Date();
+      const hasDateFilter = Boolean(fromDate || toDate);
+
+      console.log("fetch triggered. Filter active:", hasDateFilter, "Dates:", {
+        fromDate,
+        toDate
+      });
+
+      if (
+        !hasDateFilter &&
+        attendanceCache.data &&
+        Date.now() - attendanceCache.timestamp < attendanceCache.cacheDuration
+      ) {
+        console.log("Using cached attendance data");
+        setAttendanceRecords(attendanceCache.data);
+        setLastUpdated(new Date(attendanceCache.timestamp));
+        setLoading(false);
+        return;
+      }
+
+      console.log("Fetching fresh attendance data...");
+
+      try {
+        const params = {};
+
+        if (fromDate) {
+          params.fromDate = new Date(fromDate).toISOString();
+        } else {
+          const past = new Date();
+          past.setFullYear(past.getFullYear() - 1);
+          params.fromDate = past.toISOString();
+        }
+
+        if (toDate) {
+          const endOfDay = new Date(toDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          params.toDate = endOfDay.toISOString();
+        } else {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          params.toDate = tomorrow.toISOString();
+        }
+
+        const endpoint = hasDateFilter
+          ? `${BACKEND_URL}/api/attendance/fromDtoD`
+          : `${BACKEND_URL}/api/attendance/all`;
+
+        const attendanceResponse = await axios.get(endpoint, { params });
+        let attendanceList = attendanceResponse.data || [];
+
+        console.log("Raw attendance data:", attendanceList);
+
+        const sessionsResponse = await axios.get(`${BACKEND_URL}/api/sessions`);
+        const sessionsList = sessionsResponse.data || [];
+
+        setAllSessionsCount(sessionsList.length);
+
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+        const lastMonthSessions = sessionsList.filter((session) => {
+          try {
+            const sessionDate = new Date(session.sessionTime);
+            return sessionDate >= lastMonth;
+          } catch (error) {
+            return false;
+          }
+        });
+
+        setLastMonthCount(lastMonthSessions.length);
+
+        const noShows = attendanceList.filter(
+          (record) => (record.visitType || "Session") === "Session" && record.wasNoShow === true
+        );
+        setNoShowCount(noShows.length);
+
+        const processedRecords = attendanceList.map((record) => {
+          const visitType = record.visitType || (record.sessionID ? "Session" : "Walk-In");
+          const studentIdNumber =
+            record.studentIdNumber || record.studentID?.studentID || "N/A";
+          const studentName = record.studentID
+            ? `${record.studentID.firstName || ""} ${
+                record.studentID.lastName || ""
+              }`.trim()
+            : visitType === "Walk-In"
+            ? "Walk-In Student"
+            : "Unknown Student";
+
+          const tutorName = record.tutorID
+            ? `${record.tutorID.firstName || ""} ${
+                record.tutorID.lastName || ""
+              }`.trim()
+            : record.sessionID && record.sessionID.tutorID
+              ? `${record.sessionID.tutorID.firstName || ""} ${
+                  record.sessionID.tutorID.lastName || ""
+                }`.trim()
+              : "N/A";
+
+          const tutorId = record.tutorID?._id || record.sessionID?.tutorID?._id || "";
+
+          const sessionTime = record.sessionID && visitType !== "Walk-In"
+            ? record.sessionID.sessionTime
+            : record.checkInTime || record.createdAt;
+
+          const rawDate = new Date(sessionTime);
+          const { date, time } = formatDateTime(sessionTime);
+
+          let formattedDate = date;
+          if (date !== "N/A") {
+            const dateParts = date.split(",");
+            if (dateParts.length === 2) {
+              formattedDate = `${dateParts[0]},${dateParts[1]}`;
+            }
+          }
+
+          const checkInDateTime = formatDateTime(record.checkInTime);
+          const checkOutDateTime = formatDateTime(record.checkOutTime);
+
+          const isWalkIn = visitType === "Walk-In";
+          const hasCheckOut = Boolean(record.checkOutTime);
+
+          return {
+            id: record._id || "N/A",
+            sessionId: record.sessionID ? record.sessionID._id : "N/A",
+            type: isWalkIn ? "Walk-In" : "Session",
+            studentIdNumber,
+            studentName,
+            tutorName,
+            tutorId,
+            rawDateTime: rawDate,
+            date: formattedDate,
+            startTime: isWalkIn ? checkInDateTime.time : time,
+            duration: record.duration || (record.sessionID ? record.sessionID.duration : "N/A"),
+            endTime: isWalkIn ? (hasCheckOut ? checkOutDateTime.time : "N/A") : calculateEndTime(
+              time,
+              record.sessionID ? record.sessionID.duration : record.duration
+            ),
+            checkInTime: checkInDateTime.time,
+            checkOutTime: checkOutDateTime.time,
+            rawCheckInTime: record.checkInTime || "",
+            rawCheckOutTime: record.checkOutTime || "",
+            checkInStatus: record.checkInStatus || "N/A",
+            checkOutStatus: record.checkOutStatus || "N/A",
+            wasNoShow: record.wasNoShow,
+            status:
+              record.checkOutStatus === "Timed Out"
+                ? "Timed Out"
+                : isWalkIn && hasCheckOut
+                ? "Completed"
+                : isWalkIn && record.checkInTime
+                ? "In Progress"
+                : record.sessionID && record.sessionID.status === "Cancelled"
+                ? "Cancelled"
+                : record.wasNoShow
+                ? "No Show"
+                : record.checkOutTime
+                ? "Completed"
+                : record.checkInTime
+                ? "In Progress"
+                : "Scheduled"
+          };
+        });
+
+        processedRecords.sort((a, b) => {
+          try {
+            return b.rawDateTime - a.rawDateTime;
+          } catch (error) {
+            return 0;
+          }
+        });
+
+        const summaryMetrics = getAttendanceSummaryMetrics(processedRecords);
+        setTotalStudentVisits(summaryMetrics.totalStudentVisits);
+        setUniqueStudentCount(summaryMetrics.uniqueStudentCount);
+
+        console.log("Processed attendance records:", processedRecords);
+
+        if (!fromDate && !toDate) {
+          attendanceCache.data = processedRecords;
+          attendanceCache.timestamp = now.getTime();
+        }
+
+        setAttendanceRecords(processedRecords);
+        setLastUpdated(now);
+        setLoading(false);
+
+        if (error) setError(null);
+      } catch (axiosError) {
+        console.error("Detailed Axios Error:", {
+          message: axiosError.message,
+          response: axiosError.response
+            ? {
+                status: axiosError.response.status,
+                data: axiosError.response.data,
+                headers: axiosError.response.headers
+              }
+            : "No response",
+          request: axiosError.request ? "Request exists" : "No request",
+          config: axiosError.config
+            ? {
+                url: axiosError.config.url,
+                method: axiosError.config.method,
+                headers: axiosError.config.headers
+              }
+            : "No config"
+        });
+
+        const errorMessage = axiosError.response
+          ? `Error: ${axiosError.response.status} - ${
+              axiosError.response.data?.message || axiosError.response.statusText
+            }`
+          : "Failed to connect to the server. Please try again later.";
+
+        const sampleRecords = [
+          {
+            id: 1,
+            type: "Session",
+            studentIdNumber: "1000000001",
+            studentName: "Emily Johnson",
+            tutorName: "John Doe",
+            date: "March 20, 2024",
+            startTime: "10:00 AM",
+            duration: "90 mins",
+            endTime: "11:30 AM",
+            checkInTime: "09:55 AM",
+            checkOutTime: "11:28 AM",
+            checkInStatus: "Early",
+            checkOutStatus: "On Time",
+            wasNoShow: false,
+            status: "Completed"
+          },
+          {
+            id: 2,
+            type: "Session",
+            studentIdNumber: "1000000002",
+            studentName: "Michael Chen",
+            tutorName: "Sarah Smith",
+            date: "March 19, 2024",
+            startTime: "02:00 PM",
+            duration: "75 mins",
+            endTime: "03:15 PM",
+            checkInTime: "02:10 PM",
+            checkOutTime: "03:20 PM",
+            checkInStatus: "Late",
+            checkOutStatus: "Late",
+            wasNoShow: false,
+            status: "Completed"
+          },
+          {
+            id: 3,
+            type: "Session",
+            studentIdNumber: "1000000003",
+            studentName: "Alex Wong",
+            tutorName: "Maria Garcia",
+            date: "March 18, 2024",
+            startTime: "11:00 AM",
+            duration: "60 mins",
+            endTime: "12:00 PM",
+            checkInTime: "N/A",
+            checkOutTime: "N/A",
+            checkInStatus: "No Show",
+            checkOutStatus: "No Show",
+            wasNoShow: true,
+            status: "No Show"
+          }
+        ];
+
+        setAttendanceRecords(sampleRecords);
+        setError(`${errorMessage} (Using sample data for display purposes)`);
+        setAllSessionsCount(sampleRecords.length + 5);
+        setLastMonthCount(sampleRecords.length + 3);
+        setNoShowCount(1);
+        const sampleSummaryMetrics = getAttendanceSummaryMetrics(sampleRecords);
+        setTotalStudentVisits(sampleSummaryMetrics.totalStudentVisits);
+        setUniqueStudentCount(sampleSummaryMetrics.uniqueStudentCount);
+        setLoading(false);
+      }
+    } catch (generalError) {
+      console.error("General Error:", generalError);
+      setError("An unexpected error occurred");
+      setLoading(false);
+    }
+  }, [fromDate, toDate, error]);
+
+  useEffect(() => {
+    fetchAttendance();
+  }, [fetchAttendance, fromDate, toDate]);
+
+  function csvCellEscape(value) {
+    if (value == null || value === undefined) return "";
+
+    const str = String(value);
+    if (/[",\n\r]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+
+    return str;
+  }
+
+  function buildCsvContent(data, start, end) {
+    const headers = [
+      "Student Name",
+      "Type",
+      "ID#",
+      "Tutor Name",
+      "Date",
+      "Session Time",
+      "Check-in Time",
+      "Check-out Time",
+      "Duration",
+      "Status"
+    ];
+
+    const rows = data.map((r) => {
+      const sessionTime =
+        r.type === "Walk-In"
+          ? "N/A"
+          : `${r.startTime || "N/A"} to ${r.endTime || "N/A"}`;
+      const realDuration =
+        r.wasNoShow || r.status === "Cancelled" ? 0 : r.duration;
+
+      return [
+        r.studentName,
+        r.type,
+        r.studentIdNumber,
+        r.tutorName,
+        r.date,
+        sessionTime,
+        r.wasNoShow ? "No Show" : r.checkInTime,
+        r.wasNoShow ? "No Show" : r.checkOutTime,
+        realDuration,
+        r.status
+      ]
+        .map(csvCellEscape)
+        .join(",");
+    });
+
+    return headers.join(",") + "\n" + rows.join("\n");
+  }
+
+  const handleExport = () => {
+    const now = new Date();
+    const today = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = String(now.getFullYear());
+
+    const fileName = `attendance_report_${month}_${today}_${year}.csv`;
+    const csvContent = buildCsvContent(attendanceRecords, start, end);
+
+    const blob = new Blob(["\ufeff", csvContent], {
+      type: "text/csv; charset=utf-8;"
+    });
+
+    const urlTemp = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.setAttribute("href", urlTemp);
+    link.setAttribute("download", fileName);
+    link.style.visibility = "hidden";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(urlTemp);
+  };
+
+  const handleRefresh = () => {
+    attendanceCache.data = null;
+    attendanceCache.timestamp = null;
+    fetchAttendance();
+  };
+
+  const openEditModal = (record) => {
+    setActionError(null);
+    setEditingRecord(record);
+    setEditForm({
+      type: TYPE_OPTIONS.includes(record.type) ? record.type : "Session",
+      tutorID: record.tutorId || "",
+      studentIdNumber: record.studentIdNumber === "N/A" ? "" : record.studentIdNumber,
+      checkInTime: toDateTimeLocalValue(record.rawCheckInTime),
+      checkOutTime: toDateTimeLocalValue(record.rawCheckOutTime),
+      checkInStatus: CHECK_IN_STATUS_OPTIONS.includes(record.checkInStatus)
+        ? record.checkInStatus
+        : "On Time",
+      checkOutStatus: CHECK_OUT_STATUS_OPTIONS.includes(record.checkOutStatus)
+        ? record.checkOutStatus
+        : "On Time",
+      duration: record.duration === "N/A" ? "" : record.duration,
+      wasNoShow: Boolean(record.wasNoShow)
+    });
+  };
+
+  const closeEditModal = () => {
+    if (savingEdit) return;
+    setEditingRecord(null);
+    setEditForm(null);
+    setActionError(null);
+  };
+
+  const updateEditForm = (field, value) => {
+    setEditForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleSaveEdit = async (event) => {
+    event.preventDefault();
+    if (!editingRecord || !editForm) return;
+
+    try {
+      setSavingEdit(true);
+      setActionError(null);
+
+      await axios.put(
+        `${BACKEND_URL}/api/attendance/${editingRecord.id}`,
+        {
+          visitType: editForm.type,
+          tutorID: editForm.tutorID,
+          studentIdNumber: editForm.studentIdNumber,
+          checkInTime: fromDateTimeLocalValue(editForm.checkInTime),
+          checkOutTime: fromDateTimeLocalValue(editForm.checkOutTime),
+          checkInStatus: editForm.checkInStatus,
+          checkOutStatus: editForm.checkOutStatus,
+          duration: editForm.duration,
+          wasNoShow: editForm.wasNoShow
+        },
+        { withCredentials: true }
+      );
+
+      attendanceCache.data = null;
+      attendanceCache.timestamp = null;
+      setEditingRecord(null);
+      setEditForm(null);
+      await fetchAttendance();
+    } catch (saveError) {
+      setActionError(
+        saveError.response?.data?.message ||
+          "Unable to update attendance entry. Please try again."
+      );
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteRecord = async (record) => {
+    const confirmed = window.confirm(
+      `Delete attendance entry for ${record.studentName} on ${record.date}?`
+    );
+    if (!confirmed) return;
+
+    try {
+      setActionError(null);
+      setDeleteInProgressId(record.id);
+      await axios.delete(`${BACKEND_URL}/api/attendance/${record.id}`, {
+        withCredentials: true
+      });
+
+      attendanceCache.data = null;
+      attendanceCache.timestamp = null;
+      await fetchAttendance();
+    } catch (deleteError) {
+      setActionError(
+        deleteError.response?.data?.message ||
+          "Unable to delete attendance entry. Please try again."
+      );
+    } finally {
+      setDeleteInProgressId(null);
+    }
+  };
+
+  const formatLastUpdated = (date) => {
+    if (!date) return "";
+
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      hour12: true
+    }).format(date);
+  };
+
+  const formatDuration = (duration) => {
+    if (!duration) return "N/A";
+
+    if (typeof duration === "number") {
+      if (duration >= 60) {
+        const hours = Math.floor(duration / 60);
+        const minutes = duration % 60;
+        return `${hours}h ${minutes > 0 ? `${minutes}m` : ""}`;
+      }
+
+      return `${duration}m`;
+    }
+
+    return duration;
+  };
+
+  const getStatusClass = (status) => {
+    if (!status) return "";
+
+    const className = `status${status.replace(/\s/g, "")}`;
+    return styles[className] || "";
+  };
+
+  const getCheckStatusClass = (status) => {
+    if (!status) return "";
+
+    const className = `checkStatus${status.replace(/\s/g, "")}`;
+    return styles[className] || "";
+  };
+
+  return (
+    <div className={styles.container}>
+      <AdminSideBar selected="analytics" />
+
+      <div
+        className={`${styles.mainContent} ${
+          isCollapsed ? styles.mainContentCollapsed : ""
+        }`}
+      >
+        <div
+          className={`${styles.headerSection} ${
+            isCollapsed ? styles.headerSectionCollapsed : ""
+          }`}
+        >
+          <h1 className={styles.heading}>Attendance Report</h1>
+
+          {lastUpdated && (
+            <div className={styles.headerActions}>
+              <span className={styles.lastUpdated}>
+                Last updated: {formatLastUpdated(lastUpdated)}
+              </span>
+
+              <button className={styles.csvButton} onClick={handleExport}>
+                <FaFileCsv /> Export CSV
+              </button>
+
+              <button
+                className={styles.refreshButton}
+                onClick={handleRefresh}
+                disabled={loading}
+              >
+                {loading ? "Refreshing..." : "Refresh Data"}
+              </button>
+
+              <button
+                className={styles.refreshButton}
+                onClick={() => navigate("/advanced-reports")}
+              >
+                View Advanced Reports
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className={styles.attendanceSection}>
+          <div className={styles.statisticsContainer}>
+            <div className={styles.statCard}>
+              <h3 className={styles.statTitle}>Total Booked Sessions</h3>
+              <p className={styles.statValue}>
+                {loading ? "..." : allSessionsCount}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <h3 className={styles.statTitle}>Last Month's Sessions</h3>
+              <p className={styles.statValue}>
+                {loading ? "..." : lastMonthCount}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <h3 className={styles.statTitle}>Completed Sessions</h3>
+              <p className={styles.statValue}>
+                {loading
+                  ? "..."
+                  : attendanceRecords.filter(
+                      (record) =>
+                        record.type === "Session" &&
+                        record.status === "Completed"
+                    ).length}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <h3 className={styles.statTitle}>No-Show Sessions</h3>
+              <p className={styles.statValue}>
+                {loading ? "..." : noShowCount}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <h3 className={styles.statTitle}>Unique Students</h3>
+              <p className={styles.statValue}>
+                {loading ? "..." : uniqueStudentCount}
+              </p>
+            </div>
+
+            <div className={styles.statCard}>
+              <h3 className={styles.statTitle}>Total Student Visits</h3>
+              <p className={styles.statValue}>
+                {loading ? "..." : totalStudentVisits}
+              </p>
+            </div>
+          </div>
+
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Attendance Records</h2>
+
+            <div className={styles.dateFilter}>
+              <label className={styles.dateBox}>
+                <span>From</span>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className={styles.dateInput}
+                />
+              </label>
+
+              <label className={styles.dateBox}>
+                <span>To</span>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className={styles.dateInput}
+                />
+              </label>
+            </div>
+          </div>
+
+          {actionError && (
+            <div className={styles.inlineError}>
+              <p>{actionError}</p>
+            </div>
+          )}
+
+          {loading ? (
+            <div className={styles.loadingContainer}>
+              <p>Loading attendance data...</p>
+            </div>
+          ) : error ? (
+            <div className={styles.errorContainer}>
+              <p>{error}</p>
+            </div>
+          ) : attendanceRecords.length === 0 ? (
+            <div className={styles.emptyContainer}>
+              <p>No attendance records available.</p>
+            </div>
+          ) : (
+            <div className={styles.tableContainer}>
+              <table className={styles.sessionsTable}>
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Type</th>
+                    <th>ID#</th>
+                    <th>Tutor</th>
+                    <th>Date</th>
+                    <th>Session Time</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {attendanceRecords.map((record) => (
+                    <tr key={record.id}>
+                      <td>{record.studentName}</td>
+                      <td>{record.type}</td>
+                      <td>{record.studentIdNumber}</td>
+                      <td>{record.tutorName}</td>
+
+                      <td>
+                        {record.date?.includes(",") ? (
+                          <>
+                            <div>{record.date.split(",")[0]},</div>
+                            <div>{record.date.split(",")[1].trim()}</div>
+                          </>
+                        ) : (
+                          <div>{record.date}</div>
+                        )}
+                      </td>
+
+                      <td>
+                        {record.type === "Walk-In"
+                          ? "N/A"
+                          : `${record.startTime} to ${record.endTime}`}
+                      </td>
+
+                      <td>
+                        {record.checkInTime !== "N/A" ? (
+                          <>
+                            {record.checkInTime}
+                            <span
+                              className={`${styles.statusBadge} ${getCheckStatusClass(
+                                record.checkInStatus
+                              )}`}
+                            >
+                              {record.checkInStatus}
+                            </span>
+                          </>
+                        ) : record.wasNoShow ? (
+                          <span
+                            className={`${styles.statusBadge} ${styles.checkStatusNoShow}`}
+                          >
+                            No Show
+                          </span>
+                        ) : (
+                          <span className={styles.mutedText}>Not Checked In</span>
+                        )}
+                      </td>
+
+                      <td>
+                        {record.checkOutTime !== "N/A" ? (
+                          <>
+                            {record.checkOutTime}
+                            <span
+                              className={`${styles.statusBadge} ${getCheckStatusClass(
+                                record.checkOutStatus
+                              )}`}
+                            >
+                              {record.checkOutStatus}
+                            </span>
+                          </>
+                        ) : record.wasNoShow ? (
+                          <span
+                            className={`${styles.statusBadge} ${styles.checkStatusNoShow}`}
+                          >
+                            No Show
+                          </span>
+                        ) : record.checkInTime !== "N/A" ? (
+                          <span className={styles.warningText}>In Progress</span>
+                        ) : (
+                          <span className={styles.mutedText}>Not Started</span>
+                        )}
+                      </td>
+
+                      <td>
+                        <span className={styles.durationBadge}>
+                          {formatDuration(record.duration)}
+                        </span>
+                      </td>
+
+                      <td className={styles.centerText}>
+                        <span
+                          className={`${styles.statusBadge} ${getStatusClass(
+                            record.status
+                          )}`}
+                        >
+                          {record.status}
+                        </span>
+                      </td>
+
+                      <td className={styles.actionsCell}>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          onClick={() => openEditModal(record)}
+                          title="Edit attendance entry"
+                          aria-label={`Edit attendance entry for ${record.studentName}`}
+                        >
+                          <FaEdit />
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`${styles.iconButton} ${styles.deleteButton}`}
+                          onClick={() => handleDeleteRecord(record)}
+                          disabled={deleteInProgressId === record.id}
+                          title="Delete attendance entry"
+                          aria-label={`Delete attendance entry for ${record.studentName}`}
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {editingRecord && editForm && (
+          <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+            <form className={styles.editModal} onSubmit={handleSaveEdit}>
+              <div className={styles.modalHeader}>
+                <div>
+                  <h3>Edit Attendance</h3>
+                  <p>{editingRecord.studentName}</p>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.closeButton}
+                  onClick={closeEditModal}
+                  aria-label="Close edit dialog"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className={styles.formGrid}>
+                <label className={styles.formField}>
+                  <span>Type</span>
+                  <select
+                    value={editForm.type}
+                    onChange={(e) => updateEditForm("type", e.target.value)}
+                  >
+                    {TYPE_OPTIONS.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Tutor</span>
+                  <select
+                    value={editForm.tutorID}
+                    onChange={(e) => updateEditForm("tutorID", e.target.value)}
+                  >
+                    <option value="">N/A</option>
+                    {tutorOptions.map((tutor) => (
+                      <option key={tutor._id} value={tutor._id}>
+                        {`${tutor.firstName || ""} ${tutor.lastName || ""}`.trim()}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formField}>
+                  <span>ID#</span>
+                  <input
+                    type="text"
+                    value={editForm.studentIdNumber}
+                    onChange={(e) => updateEditForm("studentIdNumber", e.target.value)}
+                  />
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Check-In Time</span>
+                  <input
+                    type="datetime-local"
+                    value={editForm.checkInTime}
+                    onChange={(e) => updateEditForm("checkInTime", e.target.value)}
+                  />
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Check-Out Time</span>
+                  <input
+                    type="datetime-local"
+                    value={editForm.checkOutTime}
+                    onChange={(e) => updateEditForm("checkOutTime", e.target.value)}
+                  />
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Check-In Status</span>
+                  <select
+                    value={editForm.checkInStatus}
+                    onChange={(e) => updateEditForm("checkInStatus", e.target.value)}
+                  >
+                    {CHECK_IN_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Check-Out Status</span>
+                  <select
+                    value={editForm.checkOutStatus}
+                    onChange={(e) => updateEditForm("checkOutStatus", e.target.value)}
+                  >
+                    {CHECK_OUT_STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.formField}>
+                  <span>Duration Minutes</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.duration}
+                    onChange={(e) => updateEditForm("duration", e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <label className={styles.checkboxField}>
+                <input
+                  type="checkbox"
+                  checked={editForm.wasNoShow}
+                  onChange={(e) => updateEditForm("wasNoShow", e.target.checked)}
+                />
+                <span>No Show</span>
+              </label>
+
+              {actionError && (
+                <div className={styles.modalError}>
+                  <p>{actionError}</p>
+                </div>
+              )}
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={closeEditModal}
+                  disabled={savingEdit}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={savingEdit}
+                >
+                  <FaSave />
+                  {savingEdit ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default AttendanceReport;
+>>>>>>> e466799 (Cardswipe hotfix for both student and tutor)
