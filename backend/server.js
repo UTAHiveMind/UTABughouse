@@ -98,6 +98,7 @@ const analyticsRoutes = require('./routes/analytics');
 const bugHouse = require('./routes/bugHouse');
 const courseRoutes = require('./routes/courses'); // for all the course
 const tutorRequestRoutes = require('./routes/tutorRequests'); // Tutor request routes
+const studentHeatMapRoutes = require("./routes/studentHeatMap");
 
 
 
@@ -122,6 +123,7 @@ app.use('/api/analytics', require('./routes/analytics'));
 
 app.use("/api/notifications", notificationRoutes); // Notification routes
 app.use("/api/admin", adminEmailRoutes);
+app.use("/api/studentheatmap"), studentHeatMapRoutes
 
 // === Connect to MongoDB ===
 if (!MONGO_URI) {

@@ -56,9 +56,14 @@
     border-top: 4px solid #34A853;
   }
   
-  .analyticsCard:last-child {
-    border-top: 4px solid  #9b59b6;
+  .analyticsCard:nth-child(2) {
+    border-top: 4px solid #9b59b6;
   }
+
+  .analyticsCard:nth-child(3) {
+    border-top: 4px solid #f39c12;
+  }
+
 
   
   .cardIcon {
@@ -83,11 +88,16 @@
     box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
   }
   
-  .analyticsCard:last-child .cardIcon {
-    color:  #9b59b6;
-    /* background-color: rgba(52, 168, 83, 0.1); */
+  .analyticsCard:nth-child(2) .cardIcon {
+    color: #9b59b6;
     background-color: rgba(46, 204, 113, 0.6);
     box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.3);
+  }
+
+  .analyticsCard:nth-child(3) .cardIcon {
+    color: #b44707;
+    background-color: rgba(243, 156, 18, 0.2);
+    box-shadow: 0 10px 15px -3px rgba(243, 156, 18, 0.3);
   }
   
   .cardIcon svg {
@@ -122,8 +132,12 @@
     color: #34A853;
   }
   
-  .analyticsCard:last-child .cardAction {
-    color:  #9b59b6;
+  .analyticsCard:nth-child(2) .cardAction {
+    color: #9b59b6;
+  }
+
+  .analyticsCard:nth-child(3) .cardAction {
+    color: #f39c12;
   }
   
   .cardAction svg {

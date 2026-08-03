@@ -18,6 +18,10 @@ const AnalyticsOptions = () => {
     navigate("/analytics/attendance-reports");
   };
 
+  const handleStudentHeatMapReports = () => {
+    navigate("/analytics/student-heatmap")
+  };
+
   return (
     <div className={styles.container}>
       <AdminSidebar selected="analytics" />
@@ -104,6 +108,51 @@ const AnalyticsOptions = () => {
               </svg>
             </div>
           </div>
+        <div
+          className={analyticsStyles.analyticsCard}
+          onClick={handleStudentHeatMapReports}
+        >
+        <div className={analyticsStyles.cardIcon}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="4" height="4"></rect>
+            <rect x="10" y="3" width="4" height="4"></rect>
+            <rect x="17" y="3" width="4" height="4"></rect>
+
+            <rect x="3" y="10" width="4" height="4"></rect>
+            <rect x="10" y="10" width="4" height="4"></rect>
+            <rect x="17" y="10" width="4" height="4"></rect>
+
+            <rect x="3" y="17" width="4" height="4"></rect>
+            <rect x="10" y="17" width="4" height="4"></rect>
+            <rect x="17" y="17" width="4" height="4"></rect>
+          </svg>
+        </div>
+        <h2>Student Check-in Heat Map</h2>
+        <p>Heat map of student check-in hours and days.</p>
+        <div className={analyticsStyles.cardAction}>
+          <span>View Details</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14"></path>
+              <path d="M12 5l7 7-7 7"></path>
+            </svg>
+          </div>
+        </div>
         </div>
       </div>
     </div>
